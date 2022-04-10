@@ -1,5 +1,5 @@
 # 饥荒专服 Docker 镜像
-[<img src="[img/mole_icon.png](https://cdn.akamai.steamstatic.com/steam/apps/322330/header_schinese.jpg?t=1643303985)" alt="STEAM 商店头图" width="150" align="right"/>](https://mole.leiting.com/home)
+[<img src="https://cdn.akamai.steamstatic.com/steam/apps/322330/header_schinese.jpg?t=1643303985" alt="STEAM 商店头图" align="center"/>](https://store.steampowered.com/app/322330/)
 ## 偏好核对
 **强烈建议使用前先检查本项目是否能满足您的偏好。**
 - [ ] 饥荒联机版（Don't Starve Together）

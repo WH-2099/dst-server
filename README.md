@@ -1,44 +1,70 @@
 # 饥荒专服 Docker 镜像
-[<img src="https://cdn.akamai.steamstatic.com/steam/apps/322330/header_schinese.jpg?t=1643303985" alt="STEAM 商店头图" align="center"/>](https://store.steampowered.com/app/322330/)
+[![STEAM 商店头图](https://cdn.akamai.steamstatic.com/steam/apps/322330/header_schinese.jpg?t=1643303985)](https://store.steampowered.com/app/322330/)
 ## 偏好核对
-**强烈建议使用前先检查本项目是否能满足您的偏好。**
+**强烈建议使用前核对本项目是否能满足您的偏好。**
 - [ ] 饥荒联机版（Don't Starve Together）
 - [ ] 专用服务器（Dedicated Server）
-- [ ] Docker 镜像（Docker image）
-- [ ] STEAM 平台（Steam platform）
+- [ ] Docker 镜像（Docker Image）
+- [ ] STEAM 平台（Steam Platform）
 - [ ] 64 位 Linux 系统（64-bit Linux System）
 - [ ] **极简纯净（[KISS原则](https://zh.wikipedia.org/wiki/KISS%E5%8E%9F%E5%88%99)）**
 - [ ] 遵循官方规范（[Official Specifications](#官方规范)）
 
-## 安装
+## 首次安装
 **此部分尚未完成**
-1. 请确保已经安装了 [Docker 引擎](https://docs.docker.com/engine/)
-   - 如果没有安装，可参照官网指导 [Install Docker Engine](https://docs.docker.com/engine/install/)
-2. 创建需要的配置文件夹
-2. 拉取镜像并启动容器
+1. 请确保服务器已经安装了 [Docker 引擎](https://docs.docker.com/engine/)
+    - 如果没有安装，可参照官网指导 [Install Docker Engine](https://docs.docker.com/engine/install/)
+
+2. 在服务器创建配置文件夹
+    ```shell
+    mkdir -p "${HOME}/DST"
+    ```
+    - 此路径可自定义，与下一步启动容器命令中的内容同步修改即可
+
+3. 在本地打开游戏客户端 -> 创建游戏 -> 创建新世界
+
+4. 配置好这个世界的一切选项（包括 mod）-> 生成世界 -> 角色选择界面 -> 断开连接
+
+5. 创建游戏 -> 管理世界（右侧**扳手**）-> 切换为本地存档 -> 打开世界文件夹
+
+6. 在服务器拉取游戏专服镜像并启动容器
    #TODO: docker compose 直接启动双世界
-   - 在命令行中运行 `docker run --name dst-master --restart unless-stopped -v "${HOME}"/DST:/data/conf --network host wh2099/dst-docker`
-       - 游戏存档目录默认为 `"${HOME}"/DST` ，可根据需要自行修改 
-       - 推荐直接配置 `--network host`，毕竟理论上网络性能会好那么一丢丢（安全性就相信一次 Klei 吧）
+    ```shell
+    docker run --name dst-master --restart unless-stopped -v "${HOME}/DST":/data/conf --network host wh2099/dst-docker
+    ```
+   - **初次启动需要进行 STEAM 更新并下载游戏服务端本体，耗时较久**
+   - 直接配置 `--network host`，简单粗暴且[网络性能会好那么一丢丢](https://stackoverflow.com/questions/21691540/how-to-optimize-performance-for-a-docker-container/21707838#21707838)（安全性就相信一下 V社 和 Klei 吧）
+   - `--restart unless-stopped` 的作用是保证游戏服务端开机自启，非必需 
+
+## 维护命令
+### 基础
+- 关闭 `docker stop dst`
+- 启动（非首次） `docker start dst`
+- 重启 `docker restart dst`
+
+### 进阶
+服务端控制台
 
 
 ## 动机
 个人长期使用 GitHub 上的相关项目，不甚满意。
 
-本身简简单单几行能搞定的小项目，非要拆一堆变量出来，再多搞几层调用。
+本身简简单单几行能完成的小项目，非要拆一堆变量出来，再多搞几层调用。
 
-大项目这么搞是规范，但对于核心代码不超 20 行的小项目，**过犹不及**。
+大项目这么搞是规范，但对于核心代码不超 20 行的微项目，**过犹不及**。
 
-说是遵循规范吧，不用 V 社给的 steamcmd 的官方 docker 镜像，还把游戏服务端本体内容打进 Docker。。。。。。
+说是遵循规范吧。。。
 
-最后搞得项目一堆小文件，生成的 Docker 镜像 1G 多，即便如此还是躲不开 STEAM 和游戏更新，何苦呢？
+不用 V 社给的 steamcmd 的官方 docker 镜像，还把游戏服务端本体内容打进 Docker。。。。。。最后项目里一堆小文件，生成的巨型 Docker 镜像 1G 多，即便如此还是躲不开 STEAM 和游戏更新，何苦呢？
 
-Klei 都主动升级 64 位客户端了，默认启动仍是 32 位。。。。。。
+Klei 官方启动脚本都[指定用 64 位客户端](https://accounts.klei.com/assets/gamesetup/linux/run_dedicated_servers.sh)了，还要老古板一样默认启动 32 位。。。。。。
 
-游戏里咱就是纯净强迫症患者，于是参照官方规范做一个 Docker 镜像。
+游戏里咱就是纯净强迫症患者，干脆遵循纯净极简的原则，参照官方规范，自己做一个 Docker 镜像好了。
 
-## 配置文件
-**专服配置文件结构及变量含义，注释中的赋值均为默认值。**
+## 进阶配置
+**干货内容，看不懂跳过就好**
+
+*专服配置文件结构及变量含义，注释中的赋值均为默认值。*
 ```
 Cluster_1  # 以集群方式提供服务，地面和洞穴是两个独立的服务器进程
 ├── cluster.ini  # 集群配置
@@ -227,6 +253,21 @@ Cluster_1  # 以集群方式提供服务，地面和洞穴是两个独立的服�
 ; 在某些操作系统上，低于 1024 的端口限制为只能特权用户使用。
 ; server_port = 10999
 ```
+
+### dedicated_server_mods_setup.lua
+```lua
+-- 两个减号表示本行内容为注释，不会被执行
+-- 有两个函数用于安装模组，ServerModSetup 和 ServerModCollectionSetup。
+-- 该脚本将在启动时执行，下载指定的 mod 到 mods 目录。
+-- ServerModSetup 参数为 模组创意工坊编号 的 字符串。
+--ServerModCollectionSetup takes a string of a specific mod's Workshop id. It will download all the mods in the collection and install them to the mod directory on boot.
+    -- 模组或合计对应的创意工坊页面，其网址末尾的数字就是编号。
+    -- 示例模组 https://steamcommunity.com/sharedfiles/filedetails/?id=351325790
+	-- ServerModSetup("351325790")
+    -- 示例合集 https://steamcommunity.com/sharedfiles/filedetails/?id=2594933855
+	-- ServerModCollectionSetup("2594933855")
+```
+
 ## 官方规范
 1. [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD)
 2. [Dedicated Server Quick Setup Guide - Linux](https://forums.kleientertainment.com/forums/topic/64441-dedicated-server-quick-setup-guide-linux/)

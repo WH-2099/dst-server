@@ -32,7 +32,7 @@
 
 4. 拉取游戏专服镜像并启动容器
     ```shell
-    docker run --name dst --restart unless-stopped -v "${HOME}/DST":/data/conf --network host -d wh2099/dst-docker
+    sudo docker run --name dst --restart unless-stopped -v "${HOME}/DST":/data/conf --network host -d wh2099/dst-server
     ```
    - **初次启动需要进行 STEAM 更新并下载游戏服务端本体，耗时较久**
    - 直接配置 `--network host`，简单粗暴且[网络性能会好那么一丢丢](https://stackoverflow.com/questions/21691540/how-to-optimize-performance-for-a-docker-container/21707838#21707838)（安全性就相信一下 V社 和 Klei 吧）
@@ -44,6 +44,7 @@
 - 关闭 `docker stop dst`
 - 启动（非首次） `docker start dst`
 - 重启 `docker restart dst`
+- 查看日志 `docker logs dst`
 
 
 ## 动机
@@ -52,10 +53,6 @@
 本身简简单单几行能完成的小项目，非要拆一堆变量出来，再多搞几层调用。
 
 大项目这么搞是规范，但对于核心代码不超 20 行的微项目，**过犹不及**。
-
-说是遵循规范吧。。。
-
-不用 V 社给的 steamcmd 的官方 docker 镜像，还把游戏服务端本体内容打进 Docker。。。。。。最后项目里一堆小文件，生成的巨型 Docker 镜像 1G 多，即便如此还是躲不开 STEAM 和游戏更新，何苦呢？
 
 Klei 官方给出的[启动脚本](https://accounts.klei.com/assets/gamesetup/linux/run_dedicated_servers.sh)都指定用 64 位客户端了，还要老古板一样默认启动 32 位。。。。。。
 
@@ -268,7 +265,6 @@ Cluster_1  # 以集群方式提供服务，地面和洞穴是两个独立的服�
     -- 示例合集 https://steamcommunity.com/sharedfiles/filedetails/?id=2594933855
 	-- ServerModCollectionSetup("2594933855")
 ```
-
 
 ## 官方规范
 1. [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD)

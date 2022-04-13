@@ -72,7 +72,7 @@ trap handle_term TERM
 
 function handle_term() {
     echo "Shutting down..."
-    pkill -TERM -P $$
+    killall -w -s TERM "dontstarve_dedicated_server_nullrenderer_x64"
     chown steam:steam -R "${DATA_ROOT}"
     exit 0
 }

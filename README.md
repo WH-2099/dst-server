@@ -41,11 +41,22 @@
 
 ## 维护命令
 ### 基础
+*本质上就是常用的 docker 容器控制命令*
 - 关闭 `docker stop dst`
 - 启动（非首次） `docker start dst`
 - 重启 `docker restart dst`
 - 查看日志 `docker logs dst`
 
+### 进阶
+可分片文件夹下的命名管道文件 `console` 向服务端发送控制台命令。
+- 重新加载世界 `c_reset()`
+- 重新生成世界 `c_regenerateworld()`
+- 手动存档 `c_save()`
+- 关闭世界而不保存 `c_shutdown(false)`
+- 发送公告 `c_announce("这里是公告内容")`
+- 查看玩家 `c_listallplayers()`
+- ……
+  
 
 ## 动机
 个人长期使用 GitHub 上的相关项目，不甚满意。
@@ -265,6 +276,7 @@ Cluster_1  # 以集群方式提供服务，地面和洞穴是两个独立的服�
     -- 示例合集 https://steamcommunity.com/sharedfiles/filedetails/?id=2594933855
 	-- ServerModCollectionSetup("2594933855")
 ```
+
 
 ## 官方规范
 1. [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD)

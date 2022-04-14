@@ -69,27 +69,31 @@ done
 
 # 优雅关闭
 trap handle_term TERM
-
 function handle_term() {
-    echo "Shutting down..."
     killall -w -s TERM "dontstarve_dedicated_server_nullrenderer_x64"
     chown steam:steam -R "${DATA_ROOT}"
     exit 0
 }
 
-# 启动分片
+# 启动集群
 for shard in "${shards[@]}"; do
+    # 清除旧缓存
+    rm -f "${cluster_dir}/${shard}/save/server_temp/server_save"
+
+    # 创建 console 管道
     shard_dir="${cluster_dir}/${shard}"
-    if [[ ! -p console ]]; then
+    if [[ ! -p "${shard_dir}/console" ]]; then
         mkfifo "${shard_dir}/console"
     fi
-    sleep infinity > "${shard_dir}/console" &
+    exec 3<>"${shard_dir}/console"
+
+    # 启动分片
     ./dontstarve_dedicated_server_nullrenderer_x64 \
         -monitor_parent_process $$ \
         -skip_update_server_mods -ugc_directory "${UGC_PATH}" \
         -persistent_storage_root "${DATA_ROOT}" \
         -conf_dir "${CONF_DIR}" \
         -cluster "${cluster}" \
-        -shard "${shard}" < "${shard_dir}/console" | sed -u "s/^/${shard}: /" &
+        -shard "${shard}" <&3 | sed -u "s/^/${shard}: /" &
 done
 wait

@@ -37,10 +37,15 @@ touch "${cluster_dir}/whitelist.txt"
 touch "${cluster_dir}/blocklist.txt"
 touch "${cluster_dir}/${MODS_DIR}/dedicated_server_mods_setup.lua"
 
-# steam 及服务端更新
+# steam 及服务端更新，更新时移除 mod 目录符号连接避免被覆写
+if [[ -L "${INSTALL_PATH}/${MODS_DIR}" ]];then
+    rm -f "${INSTALL_PATH}/${MODS_DIR}"
+fi
 "${STEAMCMD}" \
     +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +force_install_dir "${INSTALL_PATH}" \
     +login anonymous +app_update 343050 validate +quit
+rm -rf "${INSTALL_PATH}/${MODS_DIR}"
+ln -s "${cluster_dir}/${MODS_DIR}" "${INSTALL_PATH}/${MODS_DIR}"
 
 # 需要在指定目录下运行
 cd "${INSTALL_PATH}/bin64" || fail "Can't cd to ${INSTALL_PATH}/bin64"
@@ -61,10 +66,11 @@ else
     shards=($(find "${cluster_dir}" -mindepth 1 -maxdepth 1 -type d ! -name "${MODS_DIR}" -printf "%f "))
 fi
 
-# 检查分片必需配置文件
+# 检查分片必需配置文件，自动生成 mod 安装脚本
 for shard in "${shards[@]}"; do
     shard_dir="${cluster_dir}/${shard}"
     check_for_file "${shard_dir}/server.ini"
+    "${cluster_dir}/${MODS_DIR}/dedicated_server_mods_setup.lua"
 done
 
 # 优雅关闭

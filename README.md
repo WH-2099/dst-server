@@ -48,13 +48,18 @@
 - 查看日志 `docker logs dst`
 
 ### 进阶
-可分片文件夹下的命名管道文件 `console` 向服务端发送控制台命令。
+可通过分片文件夹下的命名管道文件 `console` 向服务端发送控制台命令，如：
+```shell
+echo 'c_announce("服务器需要维护，请大家提前做好准备")' > "${HOME}/DST/Cluster_1/Master/console"
+```
+#### 部分常用的控制台命令
 - 重新加载世界 `c_reset()`
 - 重新生成世界 `c_regenerateworld()`
 - 手动存档 `c_save()`
 - 关闭世界而不保存 `c_shutdown(false)`
 - 发送公告 `c_announce("这里是公告内容")`
 - 查看玩家 `c_listallplayers()`
+- 解锁科技 `c_freecrafting()`
 - ……
   
 

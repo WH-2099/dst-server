@@ -30,32 +30,13 @@ cluster_dir="${DATA_ROOT}/${CONF_DIR}/${cluster}"
 check_for_file "${cluster_dir}/cluster.ini"
 check_for_file "${cluster_dir}/cluster_token.txt"
 
-# 专服特有 非必需
-mkdir -p "${cluster_dir}/${MODS_DIR}"
+# 确保专服特有文件夹及文件存在
 touch "${cluster_dir}/adminlist.txt"
 touch "${cluster_dir}/whitelist.txt"
 touch "${cluster_dir}/blocklist.txt"
+mkdir -p "${cluster_dir}/${MODS_DIR}"
 touch "${cluster_dir}/${MODS_DIR}/dedicated_server_mods_setup.lua"
-
-# steam 及服务端更新，更新时移除 mod 目录符号连接避免被覆写
-if [[ -L "${INSTALL_PATH}/${MODS_DIR}" ]];then
-    rm -f "${INSTALL_PATH}/${MODS_DIR}"
-fi
-"${STEAMCMD}" \
-    +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +force_install_dir "${INSTALL_PATH}" \
-    +login anonymous +app_update 343050 validate +quit
-rm -rf "${INSTALL_PATH}/${MODS_DIR}"
-ln -s "${cluster_dir}/${MODS_DIR}" "${INSTALL_PATH}/${MODS_DIR}"
-
-# 需要在指定目录下运行
-cd "${INSTALL_PATH}/bin64" || fail "Can't cd to ${INSTALL_PATH}/bin64"
-
-# mod 更新
-./dontstarve_dedicated_server_nullrenderer_x64 \
-    -only_update_server_mods -ugc_directory "${UGC_PATH}" \
-    -persistent_storage_root "${DATA_ROOT}" \
-    -conf_dir "${CONF_DIR}" \
-    -cluster "${cluster}"
+touch "${cluster_dir}/${MODS_DIR}/modsettings.lua"
 
 # 检测分片文件夹名
 dir_num=$(find "${cluster_dir}" -mindepth 1 -maxdepth 1 -type d ! -name "${MODS_DIR}" | wc -l)
@@ -70,10 +51,34 @@ fi
 for shard in "${shards[@]}"; do
     shard_dir="${cluster_dir}/${shard}"
     check_for_file "${shard_dir}/server.ini"
-    "${cluster_dir}/${MODS_DIR}/dedicated_server_mods_setup.lua"
+    mod_ids=($(grep -Eo "workshop-[[:digit:]]+" "${shard_dir}/modoverrides.lua" | sed "s/workshop-//"))
+done
+IFS=$'\n'
+mod_ids=($(sort -nu <<<"${mod_ids[*]}"))
+unset IFS
+for mod_id in "${mod_ids[@]}"; do
+    echo "ServerModSetup(\"${mod_id}\")" >> "${cluster_dir}/${MODS_DIR}/dedicated_server_mods_setup.lua"
 done
 
-# 优雅关闭
+# 更新 steam 及服务端
+# 临时移除 mod 目录符号连接，避免被覆写
+if [[ -L "${INSTALL_PATH}/${MODS_DIR}" ]]; then
+    rm -f "${INSTALL_PATH}/${MODS_DIR}"
+fi
+"${STEAMCMD}" \
+    +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +force_install_dir "${INSTALL_PATH}" \
+    +login anonymous +app_update 343050 validate +quit
+rm -rf "${INSTALL_PATH:?}/${MODS_DIR:?}"
+ln -s "${cluster_dir}/${MODS_DIR}" "${INSTALL_PATH}/${MODS_DIR}"
+
+# 更新 mod
+./dontstarve_dedicated_server_nullrenderer_x64 \
+    -only_update_server_mods -ugc_directory "${UGC_PATH}" \
+    -persistent_storage_root "${DATA_ROOT}" \
+    -conf_dir "${CONF_DIR}" \
+    -cluster "${cluster}"
+
+# 信号处理，优雅关闭服务器
 trap handle_term TERM
 function handle_term() {
     killall -w -s TERM "dontstarve_dedicated_server_nullrenderer_x64"
@@ -82,6 +87,7 @@ function handle_term() {
 }
 
 # 启动集群
+cd "${INSTALL_PATH}/bin64" || fail "Can't cd to ${INSTALL_PATH}/bin64"
 for shard in "${shards[@]}"; do
     # 清除旧缓存
     rm -f "${cluster_dir}/${shard}/save/server_temp/server_save"

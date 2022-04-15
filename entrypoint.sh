@@ -35,7 +35,6 @@ touch "${cluster_dir}/adminlist.txt"
 touch "${cluster_dir}/whitelist.txt"
 touch "${cluster_dir}/blocklist.txt"
 mkdir -p "${cluster_dir}/${MODS_DIR}"
-touch "${cluster_dir}/${MODS_DIR}/dedicated_server_mods_setup.lua"
 touch "${cluster_dir}/${MODS_DIR}/modsettings.lua"
 
 # 检测分片文件夹名
@@ -56,6 +55,7 @@ done
 IFS=$'\n'
 mod_ids=($(sort -nu <<<"${mod_ids[*]}"))
 unset IFS
+rm -f "${cluster_dir}/${MODS_DIR}/dedicated_server_mods_setup.lua"
 for mod_id in "${mod_ids[@]}"; do
     echo "ServerModSetup(\"${mod_id}\")" >> "${cluster_dir}/${MODS_DIR}/dedicated_server_mods_setup.lua"
 done
@@ -70,6 +70,9 @@ fi
     +login anonymous +app_update 343050 validate +quit
 rm -rf "${INSTALL_PATH:?}/${MODS_DIR:?}"
 ln -s "${cluster_dir}/${MODS_DIR}" "${INSTALL_PATH}/${MODS_DIR}"
+
+# 进入服务端目录
+cd "${INSTALL_PATH}/bin64" || fail "Can't cd to ${INSTALL_PATH}/bin64"
 
 # 更新 mod
 ./dontstarve_dedicated_server_nullrenderer_x64 \
@@ -87,7 +90,6 @@ function handle_term() {
 }
 
 # 启动集群
-cd "${INSTALL_PATH}/bin64" || fail "Can't cd to ${INSTALL_PATH}/bin64"
 for shard in "${shards[@]}"; do
     # 清除旧缓存
     rm -f "${cluster_dir}/${shard}/save/server_temp/server_save"

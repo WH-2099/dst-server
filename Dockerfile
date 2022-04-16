@@ -4,8 +4,9 @@ LABEL maintainer="wh2099@outlook.com"
 # 持久数据卷
 # steam:steam 实际为 1000:1000
 # 与一般情况下外部系统中首个普通用户的 UID:GID 一致
+RUN mkdir -p /data/conf \
+    && chown -R steam:steam /data
 VOLUME [ "/data/conf" ]
-RUN chown -R steam:steam /data
 
 # 64 位服务端依赖
 RUN apt-get update \

@@ -34,7 +34,7 @@ check_for_file "${cluster_dir}/cluster_token.txt"
 touch "${cluster_dir}/adminlist.txt"
 touch "${cluster_dir}/whitelist.txt"
 touch "${cluster_dir}/blocklist.txt"
-mkdir -p "${cluster_dir}/${MODS_DIR}"
+mkdir "${cluster_dir}/${MODS_DIR}"
 touch "${cluster_dir}/${MODS_DIR}/modsettings.lua"
 
 # 检测分片文件夹名
@@ -57,7 +57,7 @@ mod_ids=($(sort -nu <<<"${mod_ids[*]}"))
 unset IFS
 rm -f "${cluster_dir}/${MODS_DIR}/dedicated_server_mods_setup.lua"
 for mod_id in "${mod_ids[@]}"; do
-    echo "ServerModSetup(\"${mod_id}\")" >> "${cluster_dir}/${MODS_DIR}/dedicated_server_mods_setup.lua"
+    echo "ServerModSetup(\"${mod_id}\")" >>"${cluster_dir}/${MODS_DIR}/dedicated_server_mods_setup.lua"
 done
 
 # 更新 steam 及服务端
@@ -75,11 +75,19 @@ ln -s "${cluster_dir}/${MODS_DIR}" "${INSTALL_PATH}/${MODS_DIR}"
 cd "${INSTALL_PATH}/bin64" || fail "Can't cd to ${INSTALL_PATH}/bin64"
 
 # 更新 mod
+# 使用临时分片文件夹，无需配置文件
+# 避免服务端启动默认创建 Master 分片文件夹
+temp_shard_dir=$(mkdir -dp "${cluster_dir}") || fail "Can't create temp shard dir for mod update"
+trap "rm -rf ${temp_shard_dir}" EXIT
 ./dontstarve_dedicated_server_nullrenderer_x64 \
-    -only_update_server_mods -ugc_directory "${UGC_PATH}" \
+    -only_update_server_mods \
+    -monitor_parent_process $$ \
+    -ugc_directory "${UGC_PATH}" \
     -persistent_storage_root "${DATA_ROOT}" \
     -conf_dir "${CONF_DIR}" \
-    -cluster "${cluster}"
+    -cluster "${cluster}" \
+    -shard "{shard}" | sed -u "s/^/[MOD_UPDATE]: /"
+rm -rf "${temp_shard_dir}"
 
 # 信号处理，优雅关闭服务器
 trap handle_term TERM
@@ -103,8 +111,9 @@ for shard in "${shards[@]}"; do
 
     # 启动分片
     ./dontstarve_dedicated_server_nullrenderer_x64 \
+        -skip_update_server_mods \
         -monitor_parent_process $$ \
-        -skip_update_server_mods -ugc_directory "${UGC_PATH}" \
+        -ugc_directory "${UGC_PATH}" \
         -persistent_storage_root "${DATA_ROOT}" \
         -conf_dir "${CONF_DIR}" \
         -cluster "${cluster}" \

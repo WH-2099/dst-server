@@ -77,7 +77,7 @@ cd "${INSTALL_PATH}/bin64" || fail "Can't cd to ${INSTALL_PATH}/bin64"
 # 更新 mod
 # 使用临时分片文件夹，无需配置文件
 # 避免服务端启动默认创建 Master 分片文件夹
-temp_shard_dir=$(mkdir -dp "${cluster_dir}") || fail "Can't create temp shard dir for mod update"
+temp_shard_dir=$(mktemp -dp "${cluster_dir}") || fail "Can't create temp shard dir for mod update"
 trap "rm -rf ${temp_shard_dir}" EXIT
 ./dontstarve_dedicated_server_nullrenderer_x64 \
     -only_update_server_mods \

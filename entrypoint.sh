@@ -79,6 +79,7 @@ cd "${INSTALL_PATH}/bin64" || fail "Can't cd to ${INSTALL_PATH}/bin64"
 # 避免服务端启动默认创建 Master 分片文件夹
 temp_shard_dir=$(mktemp -dp "${cluster_dir}") || fail "Can't create temp shard dir for mod update"
 trap "rm -rf ${temp_shard_dir}" EXIT
+temp_shard=$(basename "${temp_shard_dir}")
 ./dontstarve_dedicated_server_nullrenderer_x64 \
     -only_update_server_mods \
     -monitor_parent_process $$ \
@@ -86,7 +87,7 @@ trap "rm -rf ${temp_shard_dir}" EXIT
     -persistent_storage_root "${DATA_ROOT}" \
     -conf_dir "${CONF_DIR}" \
     -cluster "${cluster}" \
-    -shard "{shard}" | sed -u "s/^/[MOD_UPDATE]: /"
+    -shard "${temp_shard}" | sed -u "s/^/[MOD_UPDATE]: /"
 rm -rf "${temp_shard_dir}"
 
 # 信号处理，优雅关闭服务器

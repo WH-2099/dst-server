@@ -34,7 +34,7 @@ check_for_file "${cluster_dir}/cluster_token.txt"
 touch "${cluster_dir}/adminlist.txt"
 touch "${cluster_dir}/whitelist.txt"
 touch "${cluster_dir}/blocklist.txt"
-mkdir "${cluster_dir}/${MODS_DIR}"
+mkdir -p "${cluster_dir}/${MODS_DIR}"
 touch "${cluster_dir}/${MODS_DIR}/modsettings.lua"
 
 # 检测分片文件夹名

@@ -240,16 +240,6 @@ Cluster_1  # 以集群方式提供服务，地面和洞穴是两个独立的服�
 ; 仅可用于主分片的 cluster.ini
 ; lan_only_cluster = false
 
-; 集群的游戏风格。
-; 这个字段相当于 "创建游戏"界面中的 "服务器游戏风格 "字段。
-; 仅可用于主分片的 cluster.ini
-; 有效值如下（不包含括号及括号中内容）：
-; social  （社交）
-; cooperative  （合作）
-; competitive  （竞争）
-; madness  （疯狂）
-; cluster_intention =
-
 ; 当这个选项被设置为 false 时，游戏将不再在每天结束时自动保存。
 ; 游戏仍然会在关机时保存，并且可以使用 c_save() 手动保存。
 ; autosaver_enabled = true

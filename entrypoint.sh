@@ -106,6 +106,7 @@ for shard in "${shards[@]}"; do
     # 创建 console 管道
     shard_dir="${cluster_dir}/${shard}"
     if [[ ! -p "${shard_dir}/console" ]]; then
+        rm -f "${shard_dir}/console"
         mkfifo "${shard_dir}/console"
     fi
     exec 3<>"${shard_dir}/console"

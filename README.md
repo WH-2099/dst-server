@@ -1,27 +1,25 @@
 # 饥荒专服 Docker 镜像
-[![STEAM 商店头图](https://cdn.akamai.steamstatic.com/steam/apps/322330/header_schinese.jpg?t=1643303985)](https://store.steampowered.com/app/322330/)
+[![STEAM 商店头图](https://cdn.akamai.steamstatic.com/steam/apps/322330/header_alt_assets_41_schinese.jpg)](https://store.steampowered.com/app/322330/)
 
 
-## 偏好核对
-**强烈建议使用前核对本项目是否能满足您的偏好。**
-- [ ] 饥荒联机版（Don't Starve Together）
-- [ ] 专用服务器（Dedicated Server）
-- [ ] Docker 镜像（Docker Image）
-- [ ] STEAM 平台（Steam Platform）
-- [ ] 64 位 Linux 系统（64-bit Linux System）
-- [ ] **极简纯净（[KISS原则](https://zh.wikipedia.org/wiki/KISS%E5%8E%9F%E5%88%99)）**
-- [ ] 遵循官方规范（[Official Specifications](#官方规范)）
+## 关键特性
+  - 饥荒联机版（Don't Starve Together）
+  - 专用服务器（Dedicated Server）
+  - Docker 镜像（Docker Image）
+  - STEAM 平台（Steam Platform）
+  - 64 位 Linux 系统（64-bit Linux System）
+  - **极简纯净（[KISS 原则](https://zh.wikipedia.org/wiki/KISS%E5%8E%9F%E5%88%99)）**
 
 
 ## 首次安装
 1. 请确保服务器已经安装了 [Docker 引擎](https://docs.docker.com/engine/)
     - 如果没有安装，可参照官网指导 [Install Docker Engine](https://docs.docker.com/engine/install/)
 
-2. 创建*存储路径*（本质是文件夹，为便于区分称作路径）
+2. 创建用于存储 **游戏服务端** 和 **存档数据** 的路径
     ```shell
-    mkdir -p "${HOME}/DST"
+    mkdir -p "/opt/dst-server" "${HOME}/cluster" 
     ```
-    - *存储路径*可自定义，与启动容器命令中的内容同步修改即可
+    - 可自定义，与启动容器命令中的内容同步修改即可
 
 3. 上传配置文件夹
    
@@ -32,25 +30,25 @@
 
 4. 拉取游戏专服镜像并启动容器
     ```shell
-    sudo docker run --name dst --restart unless-stopped -v "${HOME}/DST":/data/conf --network host -d wh2099/dst-server
+    sudo docker run --name dst -d --restart unless-stopped --network host -v ${HOME}/cluster:/cluster -v /opt/dst-server:/install wh2099/dst-server:latest
     ```
    - **初次启动需要进行 STEAM 更新并下载游戏服务端本体，耗时较久**
-   - 直接配置 `--network host`，简单粗暴且[网络性能会好那么一丢丢](https://stackoverflow.com/questions/21691540/how-to-optimize-performance-for-a-docker-container/21707838#21707838)（安全性就相信一下 V社 和 Klei 吧）
+   - 直接配置 `--network host`，简单粗暴且[网络性能会好那么一丢丢](https://stackoverflow.com/questions/21691540/how-to-optimize-performance-for-a-docker-container/21707838#21707838)（当然你也可以自行配置接口映射）
    - `--restart unless-stopped` 的作用是保证游戏服务端开机自启，非必需 
 
 
-## 维护命令
-### 基础
+## 维护
+### 基础命令
 *本质上就是常用的 docker 容器控制命令*
 - 关闭（会自动存档） `docker stop dst`
 - 启动（非首次） `docker start dst`
 - 重启 `docker restart dst`
 - 查看日志 `docker logs dst`
 
-### 控制台
-可通过分片文件夹下的命名管道文件 `console` 向服务端发送控制台命令，如：
+### 游戏控制台命令
+可通过集群（分片）文件夹下的命名管道文件 `console` 向服务端发送控制台命令，如：
 ```shell
-echo 'c_announce("服务器需要维护，请大家提前做好准备")' > "${HOME}/DST/Cluster_1/Master/console"
+echo 'c_announce("服务器需要维护，请大家提前做好准备")' > "Cluster_1/console"
 ```
 部分常用的控制台命令：
 - 重新加载世界 `c_reset()`
@@ -62,8 +60,8 @@ echo 'c_announce("服务器需要维护，请大家提前做好准备")' > "${HO
 - 解锁科技 `c_freecrafting()`
 - ……
 
-### 分片集群进阶
-> 饥荒联机版专用服务器的常用架构是分片集群。每个世界都是独立的分片，同时有唯一的分片作为主控，主控及其控制的所有分片共同构成一个集群。以最常见的“森林-洞穴”为例，其本质是双分片集群，森林与洞穴都是独立启动的进程，森林为主控。
+### 集群架构
+> 饥荒联机版专用服务器的常用架构是分片集群。每个世界都是独立的分片，同时有唯一的分片作为主控，主控及其控制的所有分片共同构成一个集群。以最常见的“森林 + 洞穴”为例，其本质是双分片集群，森林与洞穴都是独立启动的进程，森林为主控。
 
 *所谓的“多层世界”一般指分片数量 >2 的集群*
 
@@ -78,50 +76,19 @@ echo 'c_announce("服务器需要维护，请大家提前做好准备")' > "${HO
 
 **请注意，本项目将启动所有存在配置文件夹的分片，故而多层世界无需多层启动，整合所有分片配置到集群下即可**
 
+
 ## TODO
-### 短期
-- [ ] 入口改用 Python 重写
-  - [ ] 服务端作为受控子进程
-  - [ ] Python 主控进程与服务端进程通信（`-cloudserver`）
-  - [ ] Python 响应服务端事件
-    - [ ] 运行事件 
-      - [ ] CPU 负载
-      - [ ] 内存使用率
-      - [ ] 网络连通性
-        - [ ] 互联网基础连通性
-        - [ ] 与 klei 认证服务器连通性
-        - [ ] 与 klei 大厅服务器连通性
-    - [ ] 定时事件
-      - [ ] 物理时间
-      - [ ] 游戏内时间
-    - [ ] 玩家事件
-      - [ ] 进入
-      - [ ] 离开
-      - [ ] 死亡
-    - [ ] 更新事件
-      - [ ] mod 更新
-      - [ ] 服务端更新
-
-### 长期
-- [ ] Docker 跨平台
-  - [ ] Windows
-  - [ ] Linux
-- [ ] Web 后台
-  - [ ] 监控游戏基础状态
-  - [ ] 开、关、升级
-  - [ ] 世界配置
-  - [ ] mod 配置
-
-## 动机
-个人长期使用 GitHub 上的相关项目，不甚满意。
-
-本身简简单单几行能完成的小项目，非要拆一堆变量出来，再多搞几层调用。
-
-大项目这么搞是规范，但对于核心代码不超 20 行的微项目，**过犹不及**。
-
-Klei 官方给出的[启动脚本](https://accounts.klei.com/assets/gamesetup/linux/run_dedicated_servers.sh)都指定用 64 位客户端了，还要老古板一样默认启动 32 位。。。。。。
-
-游戏里咱就是纯净强迫症患者，干脆遵循纯净极简的原则，参照官方规范，自己做一个 Docker 镜像好了。
+- [ ] Python 入口
+  - [x] 服务端作为受控子进程
+  - [ ] IPC
+    - [x] 通过标准输入输出
+    - [ ] `-cloudserver`
+  - [ ] 事件消息
+    - [ ] 游戏天数变动
+    - [ ] 玩家进入
+    - [ ] 玩家离开
+    - [ ] 玩家死亡
+    - [ ] 玩家发言
 
 
 ## 配置文件说明
@@ -329,7 +296,7 @@ Cluster_1  # 以集群方式提供服务，地面和洞穴是两个独立的服�
 ```
 
 
-## 官方规范
+## 参考信息
 1. [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD)
 2. [Dedicated Server Quick Setup Guide - Linux](https://forums.kleientertainment.com/forums/topic/64441-dedicated-server-quick-setup-guide-linux/)
 3. [Docker Reference Documentation](https://docs.docker.com/reference/)

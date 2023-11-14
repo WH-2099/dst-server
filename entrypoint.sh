@@ -1,10 +1,12 @@
-#!/bin/bash
-STEAMCMD="/home/steam/steamcmd/steamcmd.sh"
-INSTALL_PATH="/home/steam/steamapps/DST"
-DATA_ROOT="/data"
-UGC_PATH="${DATA_ROOT}/ugc_mods"
-CONF_DIR="conf"
-MODS_DIR="mods"
+#!/usr/bin/env bash
+
+UGC_PATH="/ugc"
+MODS_PATH="/mods"
+INSTALL_PATH="/install"
+CLUSTER_PATH="/cluster"
+STEAMCMD="/root/steamcmd/steamcmd.sh"
+
+APP_ID=343050
 
 function fail() {
     echo Error: "$@" >&2
@@ -17,108 +19,111 @@ function check_for_file() {
     fi
 }
 
-# 检测集群文件夹名
-dir_num=$(find "${DATA_ROOT}/${CONF_DIR}" -mindepth 1 -maxdepth 1 -type d | wc -l)
-if [[ ${dir_num} -ne 1 ]]; then
-    # 文件夹不唯一
-    fail "There should be one and only one folder in ${DATA_ROOT}/${CONF_DIR}"
+# 信号处理，优雅关闭服务器
+trap handle_term TERM
+function handle_term() {
+    killall -ws TERM 'steamcmd' 'dontstarve_dedicated_server_nullrenderer_x64'
+    exit 0
+}
+
+# 用软链接保证容器间 mods 文件夹隔离
+if [[ ! -L "$INSTALL_PATH/mods" ]]; then
+    rm -rf "$INSTALL_PATH/mods"
+    ln -s "$MODS_PATH" "$INSTALL_PATH/mods"
 fi
-cluster=$(find "${DATA_ROOT}/${CONF_DIR}" -mindepth 1 -maxdepth 1 -type d -printf "%f")
-
-# 检查集群必需配置文件
-cluster_dir="${DATA_ROOT}/${CONF_DIR}/${cluster}"
-check_for_file "${cluster_dir}/cluster.ini"
-check_for_file "${cluster_dir}/cluster_token.txt"
-
-# 确保专服特有文件夹及文件存在
-touch "${cluster_dir}/adminlist.txt"
-touch "${cluster_dir}/whitelist.txt"
-touch "${cluster_dir}/blocklist.txt"
-mkdir -p "${cluster_dir}/${MODS_DIR}"
-touch "${cluster_dir}/${MODS_DIR}/modsettings.lua"
-
-# 检测分片文件夹名
-dir_num=$(find "${cluster_dir}" -mindepth 1 -maxdepth 1 -type d ! -name "${MODS_DIR}" | wc -l)
-if [[ ${dir_num} -eq 0 ]]; then
-    # 找不到对应文件夹
-    fail "There should be at least one folder in ${cluster_dir}"
-else
-    shards=($(find "${cluster_dir}" -mindepth 1 -maxdepth 1 -type d ! -name "${MODS_DIR}" -printf "%f "))
-fi
-
-# 检查分片必需配置文件，自动生成 mod 安装脚本
-for shard in "${shards[@]}"; do
-    shard_dir="${cluster_dir}/${shard}"
-    check_for_file "${shard_dir}/server.ini"
-    mod_ids=($(grep -Eo "workshop-[[:digit:]]+" "${shard_dir}/modoverrides.lua" | sed "s/workshop-//"))
-done
-IFS=$'\n'
-mod_ids=($(sort -nu <<<"${mod_ids[*]}"))
-unset IFS
-rm -f "${cluster_dir}/${MODS_DIR}/dedicated_server_mods_setup.lua"
-for mod_id in "${mod_ids[@]}"; do
-    echo "ServerModSetup(\"${mod_id}\")" >>"${cluster_dir}/${MODS_DIR}/dedicated_server_mods_setup.lua"
-done
 
 # 更新 steam 及服务端
-# 临时移除 mod 目录符号连接，避免被覆写
-if [[ -L "${INSTALL_PATH}/${MODS_DIR}" ]]; then
-    rm -f "${INSTALL_PATH}/${MODS_DIR}"
+if [[ ! -f "$INSTALL_PATH/noupdate" ]]; then
+    # Steam 会对安装路径的上层做权限判定，需要可写
+    upper_install_path=$(dirname "$INSTALL_PATH")
+    if [[ ! -w "$upper_install_path" ]]; then
+        chmod u+w "$upper_install_path"
+    fi
+
+    "$STEAMCMD" \
+        +@ShutdownOnFailedCommand 1 \
+        +@NoPromptForPassword 1 \
+        +force_install_dir "$INSTALL_PATH" \
+        +login anonymous \
+        +app_update "$APP_ID" \
+        +quit
 fi
-"${STEAMCMD}" \
-    +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +force_install_dir "${INSTALL_PATH}" \
-    +login anonymous +app_update 343050 validate +quit
-rm -rf "${INSTALL_PATH:?}/${MODS_DIR:?}"
-ln -s "${cluster_dir}/${MODS_DIR}" "${INSTALL_PATH}/${MODS_DIR}"
 
 # 进入服务端目录
-cd "${INSTALL_PATH}/bin64" || fail "Can't cd to ${INSTALL_PATH}/bin64"
+cd "$INSTALL_PATH/bin64" || fail "can't cd to $INSTALL_PATH/bin64"
+
+# 检测分片文件夹名
+mapfile -t shards < <(find "$CLUSTER_PATH" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+
+# 检查分片必需配置文件
+mod_ids=()
+for shard in "${shards[@]}"; do
+    shard_path="$CLUSTER_PATH/$shard"
+    check_for_file "$shard_path/server.ini"
+    mapfile -t -O "${#mod_ids[@]}" mod_ids < <(grep -Eo "workshop-[[:digit:]]+" "$shard_path/modoverrides.lua" | sed "s/workshop-//")
+done
 
 # 更新 mod
 # 使用临时分片文件夹，无需配置文件
 # 避免服务端启动默认创建 Master 分片文件夹
-temp_shard_dir=$(mktemp -dp "${cluster_dir}") || fail "Can't create temp shard dir for mod update"
-trap "rm -rf ${temp_shard_dir}" EXIT
-temp_shard=$(basename "${temp_shard_dir}")
+sorted_ids=()
+mapfile -t sorted_ids < <(echo "${mod_ids[@]}" | tr ' ' '\n' | sort -nu)
+touch "$MODS_PATH/modsettings.lua"
+rm -f "$MODS_PATH/dedicated_server_mods_setup.lua"
+for id in "${sorted_ids[@]}"; do
+    echo "ServerModSetup(\"$id\")" >>"$MODS_PATH/dedicated_server_mods_setup.lua"
+done
+mkdir -p '/tmp/conf/c/s'
 ./dontstarve_dedicated_server_nullrenderer_x64 \
     -only_update_server_mods \
     -monitor_parent_process $$ \
-    -ugc_directory "${UGC_PATH}" \
-    -persistent_storage_root "${DATA_ROOT}" \
-    -conf_dir "${CONF_DIR}" \
-    -cluster "${cluster}" \
-    -shard "${temp_shard}" | sed -u "s/^/[MOD_UPDATE]: /"
-rm -rf "${temp_shard_dir}"
+    -ugc_directory "$UGC_PATH" \
+    -persistent_storage_root '/tmp' \
+    -conf_dir 'conf' \
+    -cluster 'c' \
+    -shard 's' | sed -u 's/^/[MOD_UPDATE]: /'
+rm -rf '/tmp/conf'
 
-# 信号处理，优雅关闭服务器
-trap handle_term TERM
-function handle_term() {
-    killall -w -s TERM "dontstarve_dedicated_server_nullrenderer_x64"
-    chown steam:steam -R "${DATA_ROOT}"
-    exit 0
-}
+# 检查集群必需配置文件
+check_for_file "$CLUSTER_PATH/cluster.ini"
+check_for_file "$CLUSTER_PATH/cluster_token.txt"
+
+# 确保专服特有文件夹及文件存在
+touch "$CLUSTER_PATH/adminlist.txt"
+touch "$CLUSTER_PATH/whitelist.txt"
+touch "$CLUSTER_PATH/blocklist.txt"
 
 # 启动集群
 for shard in "${shards[@]}"; do
-    # 清除旧缓存
-    rm -f "${cluster_dir}/${shard}/save/server_temp/server_save"
+    shard_path="$CLUSTER_PATH/$shard"
+    check_for_file "$shard_path/server.ini"
 
-    # 创建 console 管道
-    shard_dir="${cluster_dir}/${shard}"
-    if [[ ! -p "${shard_dir}/console" ]]; then
-        rm -f "${shard_dir}/console"
-        mkfifo "${shard_dir}/console"
+    # 主分片的 console 作为集群 console
+    if grep -qiE 'is_master[[:space:]]*=[[:space:]]*true' "$shard_path/server.ini"; then
+        console_path="$CLUSTER_PATH/console"
+    else
+        console_path="$shard_path/console"
     fi
-    exec 3<>"${shard_dir}/console"
+
+    # 创建命名管道
+    if [[ ! -p "$console_path" ]]; then
+        rm -f "$console_path"
+        mkfifo "$console_path"
+    fi
 
     # 启动分片
+    # 分片配置路径应为 <persistent_storage_root>/<conf_dir>/<cluster>/<shard>/server.ini
+    # 这里的配置最终形成的路径实际为 ////clutser/shard/server.ini
+    # 这在 linux 环境下等价于 /cluster/shard/server.ini
     ./dontstarve_dedicated_server_nullrenderer_x64 \
         -skip_update_server_mods \
         -monitor_parent_process $$ \
-        -ugc_directory "${UGC_PATH}" \
-        -persistent_storage_root "${DATA_ROOT}" \
-        -conf_dir "${CONF_DIR}" \
-        -cluster "${cluster}" \
-        -shard "${shard}" <&3 | sed -u "s/^/${shard}: /" &
+        -persistent_storage_root / \
+        -conf_dir / \
+        -ugc_directory "$UGC_PATH" \
+        -cluster "$(basename $CLUSTER_PATH)" \
+        -shard "$shard" <>"$console_path" | sed -u "s/^/$shard: /" &
+    # cloudserver 模式下 TERM 后不会自动终止进程，暂时不用此模式
+    # -cloudserver 3<>"$console_path" 4>>"$shard_path/fd4" 5>>"$shard_path/fd5"
 done
 wait

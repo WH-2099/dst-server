@@ -6,12 +6,12 @@ from logging import getLogger
 from types import TracebackType
 from typing import NamedTuple, Self
 
-from aiohttp import ClientError, ClientSession, TCPConnector
+from aiohttp import ClientError, ClientSession, TCPConnector, request
 from bs4 import BeautifulSoup
 from pydantic import ValidationError
 
-from enums import Platform, Region, VersionType
-from models import LobbyData, RoomData
+from enums import OnewordType, Platform, Region, VersionType
+from models import LobbyData, Oneword, RoomData
 
 logger = getLogger(__name__)
 
@@ -169,6 +169,32 @@ class KleiService:
             if result := t.result():
                 data_list.append(result)
         return data_list
+
+
+class OnewordService:
+    CN_URL = "https://v1.hitokoto.cn"
+    INTERNATIONAL_URL = "https://international.v1.hitokoto.cn"
+
+    @classmethod
+    async def get_oneword(
+        cls, types: None | Iterable[OnewordType] = None, retry: int = 3
+    ) -> None | Oneword:
+        params = None
+        if types:
+            params = [("c", t) for t in types]
+
+        data_bytes = None
+        for i in range(retry + 1):
+            try:
+                async with request("GET", cls.CN_URL, params=params) as resp:
+                    data_bytes = await resp.read()
+                break
+            except ClientError:
+                logger.debug(f"oneword retry {i+1}")
+        else:
+            logger.error("can't get oneword")
+
+        return data_bytes and Oneword.model_validate_json(data_bytes)
 
 
 async def test():

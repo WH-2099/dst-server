@@ -79,6 +79,20 @@ class RoomData(LobbyData):
     mods_info: None | list[None | str | bool] = None
     palyers: None | str = None
     desc: None | str = None
+class Oneword(BaseModel, populate_by_name=True):
+    """一言"""
+
+    id: int
+    uuid: UUID
+    word: Annotated[str, Field(alias="hitokoto")]
+    type: OnewordType
+    from_: Annotated[str, Field(alias="from")]
+    from_who: None | str
+    creator: str
+    creator_uid: int
+    reviewer: int
+    commit_from: str
+    created_at: datetime
 
 
 # 配置模型

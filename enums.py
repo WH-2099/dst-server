@@ -10,6 +10,23 @@ class Intention(StrEnum):
     MADNESS = "madness"  # 疯狂
 
 
+class OnewordType(StrEnum):
+    """一言类型"""
+
+    动画 = "a"
+    漫画 = "b"
+    游戏 = "c"
+    文学 = "d"
+    原创 = "e"
+    来自网络 = "f"
+    其他 = "g"
+    影视 = "h"
+    诗词 = "i"
+    网易云 = "j"
+    哲学 = "k"
+    抖机灵 = "l"
+
+
 class Platform(Flag):
     """游戏平台"""
 

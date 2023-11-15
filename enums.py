@@ -1,6 +1,15 @@
 from enum import Flag, StrEnum
 
 
+class EventType(StrEnum):
+    """事件类型"""
+
+    PLAYER_LEAVE = "[Leave Announcement]"
+    PLAYER_JOIN = "[Join Announcement]"
+    PLAYER_SAY = "[Say]"
+    SERVER_REGISTERED = "Server registered"
+
+
 class Intention(StrEnum):
     """游戏风格"""
 

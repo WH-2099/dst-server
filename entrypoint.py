@@ -9,7 +9,7 @@ from server import Cluster, Shard
 
 def gen_config(codes: Iterable[int]):
     for i in codes:
-        Cluster.conf_dir="root"
+        Cluster.conf_dir = "root"
         c = ClusterConfig()
         c.misc.max_snapshots = 10
         c.shard.shard_enabled = True

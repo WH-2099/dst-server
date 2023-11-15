@@ -2,7 +2,6 @@ import asyncio
 import json
 import os
 import re
-from pathlib import Path
 
 
 def fd_change2(from_fd: int, to_fd: int) -> int:
@@ -43,18 +42,23 @@ async def readline_pipe(self, fd: int) -> str:
     return data.decode("utf-8")
 
 
-def table_to_dict(table_str: str) -> dict:
+def lua_table_to_dict(raw_str: str) -> dict:
     """将表示 lua 中 table 的字符串转为 Python 中的 dict"""
 
+    table_str = raw_str[raw_str.find("{") : raw_str.rfind("}") + 1]
     s = table_str.replace("=", ":").replace('["', '"').replace('"]', '"')
     s = re.sub(r"(?P<key>[\w.]+)(?=\s*?:)", r'"\g<key>"', s)  # 键加双引号
-    s = re.sub(r",(?=\s*?[}|\]])", r"", s)  # 去列表尾逗号
-    return json.loads(s if s else "{}")
+    s = re.sub(r",(?=\s*?[}|\]])", "", s)  # 去列表尾逗号
+    return json.loads(s)
 
 
-def extract_lua_data(path: Path) -> dict:
-    """提取存档文件中易识别的 lua 数据"""
+def lua_table_to_list(raw_str: str) -> list:
+    """将表示 lua 中 table 的字符串转为 Python 中的 list"""
 
-    raw_str = path.read_text(encoding="utf-8")
-    table_str = raw_str[raw_str.find("{") : raw_str.find("\x00")]
-    return table_to_dict(table_str)
+    table_str = raw_str[raw_str.find("{") : raw_str.rfind("}") + 1]
+    s = table_str.replace("=", ":").replace('["', '"').replace('"]', '"')
+    s = re.sub(r"(?P<key>[\w.]+)(?=\s*?:)", r'"\g<key>"', s)  # 键加双引号
+    s = re.sub(r",(?=\s*?[}|\]])", "", s)  # 去列表尾逗号
+    s = re.sub(r"^{", "[", s)  # 替换头大括号
+    s = re.sub(r"}$", "]", s)  # 替换尾大括号
+    return json.loads(s)

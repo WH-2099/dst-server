@@ -175,7 +175,7 @@ class KleiService:
 
         if rooms is None:
             lobby_data_list = await self.get_lobby_data()
-            rooms = [(d.row_id, d.region) for d in lobby_data_list]
+            rooms = ((d.row_id, d.region) for d in lobby_data_list)
 
         sem = Semaphore(10000)
         tasks = set()
@@ -216,21 +216,40 @@ class OnewordService:
 
 
 async def test():
+    from logging import DEBUG, basicConfig
     from pprint import pp
     from sys import argv
 
+    basicConfig(level=DEBUG)
+
     token = argv[1]
     async with KleiService(token) as ks:
-        # pp(await ks.get_latest_version())
-        # pp(await ks.get_regions())
-        # pp(await ks.get_latest_version_number())
+        pp(await ks.get_regions())
+        pp(await ks.get_latest_version_number())
+        pp(await ks.get_latest_version())
+        room_data_list = await ks.get_room_data(
+            (d.row_id, d.region)
+            for d in filter(
+                lambda x: x.host == "KU_WRv6AVc8",
+                await ks.get_lobby_data((Region.AP_EAST,), (Platform.Steam,)),
+            )
+        )
         pp(
             [
-                d.model_dump()
-                for d in filter(
-                    lambda d: d.host == "KU_WRv6AVc8" and d.players,
-                    await ks.get_room_data(),
+                d.model_dump(
+                    include=(
+                        "row_id",
+                        "name",
+                        "addr",
+                        "port",
+                        "connected",
+                        "maxconnected",
+                        "season",
+                        "players",
+                        "data",
+                    )
                 )
+                for d in room_data_list
             ]
         )
 

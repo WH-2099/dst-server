@@ -79,6 +79,7 @@ class Role(StrEnum):
     WALTER = "walter"
     WANDA = "wanda"
     WONKEY = "wonkey"
+    UNKNOWN = ""
 
 
 class Season(StrEnum):

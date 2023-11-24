@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import re
+import socket
 
 
 def fd_change2(from_fd: int, to_fd: int) -> int:
@@ -62,3 +63,10 @@ def lua_table_to_list(raw_str: str) -> list:
     s = re.sub(r"^{", "[", s)  # 替换头大括号
     s = re.sub(r"}$", "]", s)  # 替换尾大括号
     return json.loads(s)
+
+
+def get_free_udp_port() -> int:
+    """获取一个空闲的 UDP 端口号"""
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        s.bind(("", 0))
+    return s.getsockname()[1]

@@ -16,7 +16,7 @@ from models import (
     ServerSteam,
 )
 from service import KleiService
-from utils import fd_change2
+from utils import fd_change2, get_free_udp_port
 
 
 # 进程模型
@@ -79,7 +79,7 @@ class Shard:
 
     async def start(
         self,
-        *args: tuple[str],
+        *args: str,
         only_update_server_mods: bool = False,
         skip_update_server_mods: bool = True,
         cloudserver: bool = False,
@@ -203,12 +203,16 @@ class Cluster:
 
         with TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            cluster = cls(name=temp_path.name, config=ClusterConfig())
-            cluster.save_config()
-            shard = Shard(cluster=cluster, config=ServerConfig())
-            shard.save_config()
+            cluster = cls(name=temp_path.name)
+            shard = Shard(cluster=cluster)
+            free_udp_port = get_free_udp_port()
             await shard.start(
-                only_update_server_mods=True, skip_update_server_mods=False
+                "-steam_master_server_port",
+                str(free_udp_port),
+                "-steam_authentication_port",
+                str(free_udp_port + 1),
+                only_update_server_mods=True,
+                skip_update_server_mods=False,
             )
 
     @property

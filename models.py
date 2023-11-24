@@ -1,12 +1,17 @@
+import re
 from abc import ABC
 from configparser import ConfigParser
+from datetime import datetime
+from functools import cached_property
 from ipaddress import IPv4Address
 from pathlib import Path
 from typing import Annotated, Self
+from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, TypeAdapter, field_validator
 
-from enums import Platform, Region, Role, Season
+from enums import OnewordType, Platform, Region, Role, Season
+from utils import lua_table_to_list
 
 
 # 数据模型
@@ -14,10 +19,10 @@ class Player(BaseModel):
     """玩家"""
 
     name: str
-    kuid: str
-    steam_id: int
-    ip: IPv4Address
-    role: None | Role = None
+    kuid: None | str = None
+    prefab: None | Role = None
+    netid: None | int = None
+    ip: None | IPv4Address = None
 
 
 class Secondary(BaseModel):
@@ -64,7 +69,7 @@ class LobbyData(BaseModel, populate_by_name=True):
     secondaries: None | dict[str, Secondary] = None
 
     @property
-    def connect_code(self) ->str:
+    def connect_code(self) -> str:
         return f"c_connect('{self.addr}', {self.port})"
 
 
@@ -77,8 +82,43 @@ class RoomData(LobbyData):
     data: None | str = None
     worldgen: None | str = None
     mods_info: None | list[None | str | bool] = None
-    palyers: None | str = None
     desc: None | str = None
+    players: Annotated[list[Player], Field(default_factory=list)]
+
+    @cached_property
+    def day(self) -> None | int:
+        d = None
+        if self.data and (match := re.search(r"day=(\d+)")):
+            d = int(match[1])
+
+        return d
+
+    @field_validator("players", mode="plain")
+    @classmethod
+    def validate_players(cls, v: None | str) -> list[Player]:
+        """解析玩家数据字符串"""
+        players = []
+        if v:
+            d = lua_table_to_list(v)
+            players = TypeAdapter(list[Player]).validate_python(d)
+
+        return players
+
+
+class Oneword(BaseModel, populate_by_name=True):
+    """一言"""
+
+    id: int
+    uuid: UUID
+    word: Annotated[str, Field(alias="hitokoto")]
+    type: OnewordType
+    from_: Annotated[str, Field(alias="from")]
+    from_who: None | str
+    creator: str
+    creator_uid: int
+    reviewer: int
+    commit_from: str
+    created_at: datetime
 
 
 # 配置模型

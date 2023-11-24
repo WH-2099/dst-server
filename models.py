@@ -1,6 +1,8 @@
+import re
 from abc import ABC
 from configparser import ConfigParser
 from datetime import datetime
+from functools import cached_property
 from ipaddress import IPv4Address
 from pathlib import Path
 from typing import Annotated, Self
@@ -81,8 +83,15 @@ class RoomData(LobbyData):
     worldgen: None | str = None
     mods_info: None | list[None | str | bool] = None
     desc: None | str = None
-    players: None | str = None
     players: Annotated[list[Player], Field(default_factory=list)]
+
+    @cached_property
+    def day(self) -> None | int:
+        d = None
+        if self.data and (match := re.search(r"day=(\d+)")):
+            d = int(match[1])
+
+        return d
 
     @field_validator("players", mode="plain")
     @classmethod

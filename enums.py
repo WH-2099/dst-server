@@ -1,6 +1,15 @@
 from enum import Flag, StrEnum
 
 
+class EventType(StrEnum):
+    """事件类型"""
+
+    PLAYER_LEAVE = "[Leave Announcement]"
+    PLAYER_JOIN = "[Join Announcement]"
+    PLAYER_SAY = "[Say]"
+    SERVER_REGISTERED = "Server registered"
+
+
 class Intention(StrEnum):
     """游戏风格"""
 
@@ -8,6 +17,23 @@ class Intention(StrEnum):
     COOPERATIVE = "cooperative"  # 合作
     COMPETITIVE = "competitive"  # 竞争
     MADNESS = "madness"  # 疯狂
+
+
+class OnewordType(StrEnum):
+    """一言类型"""
+
+    动画 = "a"
+    漫画 = "b"
+    游戏 = "c"
+    文学 = "d"
+    原创 = "e"
+    来自网络 = "f"
+    其他 = "g"
+    影视 = "h"
+    诗词 = "i"
+    网易云 = "j"
+    哲学 = "k"
+    抖机灵 = "l"
 
 
 class Platform(Flag):
@@ -53,6 +79,7 @@ class Role(StrEnum):
     WALTER = "walter"
     WANDA = "wanda"
     WONKEY = "wonkey"
+    UNKNOWN = ""
 
 
 class Season(StrEnum):

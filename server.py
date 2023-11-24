@@ -6,7 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import ClassVar
 
-from service import KleiService
+from enums import EventType
 from models import (
     ClusterConfig,
     ClusterShard,
@@ -15,7 +15,8 @@ from models import (
     ServerNetwork,
     ServerSteam,
 )
-from utils import fd_change2
+from service import KleiService
+from utils import fd_change2, get_free_udp_port
 
 
 # 进程模型
@@ -78,7 +79,7 @@ class Shard:
 
     async def start(
         self,
-        *args: tuple[str],
+        *args: str,
         only_update_server_mods: bool = False,
         skip_update_server_mods: bool = True,
         cloudserver: bool = False,
@@ -108,7 +109,6 @@ class Shard:
             *cmd_list[1:],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
             close_fds=False,
             cwd=self.cluster.bin_path.parent,
         )
@@ -130,13 +130,18 @@ class Shard:
     async def _handle_log(self) -> None:
         """处理日志输出"""
 
-        # TODO:
-
         try:
             while True:
                 stdout_bytes = await self._process.stdout.readline()
-                if stdout_bytes:
-                    print(self.name + stdout_bytes.decode(), end="")
+                if len(stdout_bytes) > 12:
+                    # 移去开头无用的相对时间 '[00:00:11]: '
+                    stdout_str = stdout_bytes[12:].decode()
+                    print(f"{self.name}: {stdout_str}", end="")
+                    for et in EventType:
+                        if stdout_str.startswith(et):
+                            # TODO:
+                            ...
+
         except KeyboardInterrupt:
             self.stop()
 
@@ -198,12 +203,16 @@ class Cluster:
 
         with TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-            cluster = cls(name=temp_path.name, config=ClusterConfig())
-            cluster.save_config()
-            shard = Shard(cluster=cluster, config=ServerConfig())
-            shard.save_config()
+            cluster = cls(name=temp_path.name)
+            shard = Shard(cluster=cluster)
+            free_udp_port = get_free_udp_port()
             await shard.start(
-                only_update_server_mods=True, skip_update_server_mods=False
+                "-steam_master_server_port",
+                str(free_udp_port),
+                "-steam_authentication_port",
+                str(free_udp_port + 1),
+                only_update_server_mods=True,
+                skip_update_server_mods=False,
             )
 
     @property
@@ -347,17 +356,6 @@ class Cluster:
             data = None
 
         return data
-
-    async def wait_online(self) -> LobbyData:
-        """等待上线"""
-
-        # TODO: 超时
-        while True:
-            data = await self._get_lobby_data()
-            if data:
-                return data
-            else:
-                await asyncio.sleep(10)
 
     async def stop(self) -> None:
         """停止集群"""

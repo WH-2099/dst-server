@@ -1,4 +1,4 @@
-from asyncio import TaskGroup, Semaphore
+from asyncio import Semaphore, TaskGroup
 from collections.abc import Iterable
 from datetime import date, datetime
 from itertools import chain, product
@@ -6,12 +6,12 @@ from logging import getLogger
 from types import TracebackType
 from typing import NamedTuple, Self
 
-from aiohttp import ClientError, ClientSession, TCPConnector
+from aiohttp import ClientError, ClientSession, TCPConnector, request
 from bs4 import BeautifulSoup
 from pydantic import ValidationError
 
-from enums import Platform, Region, VersionType
-from models import LobbyData, RoomData
+from enums import OnewordType, Platform, Region, VersionType
+from models import LobbyData, Oneword, RoomData
 
 logger = getLogger(__name__)
 
@@ -32,7 +32,9 @@ class KleiService:
     ROOM_URL = "https://lobby-v2-{region}.klei.com/lobby/read"
 
     def __init__(self, token: None | str = None, pool_size: int = 500) -> None:
-        self.session = ClientSession(connector=TCPConnector(limit=pool_size))
+        self.session = ClientSession(
+            connector=TCPConnector(limit=pool_size), raise_for_status=True
+        )
         self.token = token
 
     async def __aenter__(self) -> Self:
@@ -95,26 +97,27 @@ class KleiService:
 
         async with semaphore:
             url = self.LOBBY_URL.format(region=region, platform=platform.name)
+            raw_data = {}
             for i in range(retry + 1):
                 try:
                     async with self.session.get(url) as resp:
                         raw_data = await resp.json()
-                    data_list = []
-                    for d in raw_data.get("GET", []):
-                        d["region"] = region  # 补充接口数据未包含的地区信息
-                        try:
-                            data_list.append(LobbyData.model_validate(d))
-                        except ValidationError as exc:
-                            logger.debug(str(exc))
-                            continue
-                    return data_list
-
+                    break
                 except ClientError:
-                    logger.warning(f"{url} retry {i+1}")
+                    logger.debug(f"{url} retry {i+1}")
             else:
-                msg = f"can't get lobby data from {url}"
-                logger.error(msg)
-                raise RuntimeError(msg)
+                logger.error(f"can't get lobby data from {url}")
+
+            data_list = []
+            for d in raw_data.get("GET", []):
+                d["region"] = region  # 补充接口数据未包含的地区信息
+                try:
+                    data_list.append(LobbyData.model_validate(d))
+                except ValidationError as exc:
+                    logger.debug(str(exc))
+                    continue
+
+            return data_list
 
     async def get_lobby_data(
         self,
@@ -143,21 +146,36 @@ class KleiService:
                 "__token": self.token,
                 "query": {"__rowId": row_id},
             }
-            async with self.session.post(url, json=post_data) as resp:
-                raw_data = await resp.json()
+            raw_data = {}
+            for i in range(retry + 1):
+                try:
+                    async with self.session.post(url, json=post_data) as resp:
+                        raw_data = await resp.json()
+                    break
+                except ClientError:
+                    logger.debug(f"{row_id} retry {i+1}")
+            else:
+                logger.debug(f"can't get room data for {row_id}")
+
+            data = None
             if __data := raw_data.get("GET"):
                 _data = __data[0]
                 _data["region"] = region
-                data = RoomData.model_validate(_data)
-            else:
-                data = None
+                try:
+                    data = RoomData.model_validate(_data)
+                except ValidationError as exc:
+                    logger.debug(str(exc))
 
             return data
 
     async def get_room_data(
-        self, rooms: Iterable[tuple[str, Region]]
+        self, rooms: None | Iterable[tuple[str, Region]] = None
     ) -> list[RoomData]:
         """获取房间信息"""
+
+        if rooms is None:
+            lobby_data_list = await self.get_lobby_data()
+            rooms = ((d.row_id, d.region) for d in lobby_data_list)
 
         sem = Semaphore(10000)
         tasks = set()
@@ -171,17 +189,69 @@ class KleiService:
         return data_list
 
 
+class OnewordService:
+    CN_URL = "https://v1.hitokoto.cn"
+    INTERNATIONAL_URL = "https://international.v1.hitokoto.cn"
+
+    @classmethod
+    async def get_oneword(
+        cls, types: None | Iterable[OnewordType] = None, retry: int = 3
+    ) -> None | Oneword:
+        params = None
+        if types:
+            params = [("c", t) for t in types]
+
+        data_bytes = None
+        for i in range(retry + 1):
+            try:
+                async with request("GET", cls.CN_URL, params=params) as resp:
+                    data_bytes = await resp.read()
+                break
+            except ClientError:
+                logger.debug(f"oneword retry {i+1}")
+        else:
+            logger.error("can't get oneword")
+
+        return data_bytes and Oneword.model_validate_json(data_bytes)
+
+
 async def test():
+    from logging import DEBUG, basicConfig
     from pprint import pp
     from sys import argv
+
+    basicConfig(level=DEBUG)
+
     token = argv[1]
     async with KleiService(token) as ks:
-        pp(await ks.get_latest_version())
         pp(await ks.get_regions())
         pp(await ks.get_latest_version_number())
-        data_list = await ks.get_lobby_data()
-        room_data_list = await ks.get_room_data((d.row_id, d.region) for d in data_list)
-        pp([d.model_dump() for d in filter(lambda d: d.host == "KU_WRv6AVc8", room_data_list)])
+        pp(await ks.get_latest_version())
+        room_data_list = await ks.get_room_data(
+            (d.row_id, d.region)
+            for d in filter(
+                lambda x: x.host == "KU_WRv6AVc8",
+                await ks.get_lobby_data((Region.AP_EAST,), (Platform.Steam,)),
+            )
+        )
+        pp(
+            [
+                d.model_dump(
+                    include=(
+                        "row_id",
+                        "name",
+                        "addr",
+                        "port",
+                        "connected",
+                        "maxconnected",
+                        "season",
+                        "players",
+                        "data",
+                    )
+                )
+                for d in room_data_list
+            ]
+        )
 
 
 if __name__ == "__main__":

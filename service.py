@@ -52,15 +52,13 @@ class KleiService:
         await self.session.close()
 
     async def get_latest_version_number(self, version_type: str = "release") -> int:
-        """获取最新版本号"""
+        """获取最新版本号，备用接口，不推荐"""
 
         async with self.session.get(self.BUILD_URL) as resp:
             data = await resp.json()
         return int(max(data[version_type], key=int))
 
-    async def get_latest_version(
-        self, version_type: VersionType = VersionType.RELEASE
-    ) -> Version:
+    async def get_latest_versions(self) -> list[Version]:
         """获取最新版本数据"""
 
         async with self.session.get(self.VERSION_URL) as resp:
@@ -76,8 +74,7 @@ class KleiService:
                     datetime.strptime(date_str[9:17], "%m/%d/%y").date(),
                 )
             )
-
-        return max(filter(lambda x: x.type is version_type, versions))
+        return versions
 
     async def get_regions(self) -> list[str]:
         """获取支持区域"""
@@ -196,23 +193,34 @@ class OnewordService:
     @classmethod
     async def get_oneword(
         cls, types: None | Iterable[OnewordType] = None, retry: int = 3
-    ) -> None | Oneword:
+    ) -> Oneword:
         params = None
         if types:
             params = [("c", t) for t in types]
 
-        data_bytes = None
         for i in range(retry + 1):
             try:
                 async with request("GET", cls.CN_URL, params=params) as resp:
                     data_bytes = await resp.read()
                 break
-            except ClientError:
+            except ClientError as exc:
+                last_exc = exc
                 logger.debug(f"oneword retry {i+1}")
         else:
             logger.error("can't get oneword")
+            raise last_exc
 
-        return data_bytes and Oneword.model_validate_json(data_bytes)
+        return Oneword.model_validate_json(data_bytes)
+
+    @classmethod
+    async def get_oneword_str(
+        cls, types: None | Iterable[OnewordType] = None, retry: int = 3
+    ) -> str:
+        oneword = await cls.get_oneword(types=types, retry=retry)
+        msg = f"{oneword.word}\n——《{oneword.from_}》"
+        if fw := oneword.from_who:
+            msg += fw
+        return msg
 
 
 async def test():

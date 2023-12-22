@@ -176,7 +176,7 @@ class Cluster:
 
         app_update_cmd = "+app_update 343050"
         if beta:
-            app_update_cmd += " -beta betaupdate"
+            app_update_cmd += " -beta updatebeta"
 
         steam_cmds = [
             "+@ShutdownOnFailedCommand 1",

@@ -22,4 +22,5 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
+          file: Containerfile
           tags: wh2099/dst-server:latest

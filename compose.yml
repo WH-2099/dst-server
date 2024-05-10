@@ -1,0 +1,41 @@
+name: dst-server
+services:
+  dst-server:
+    image: dst-server
+    pull_policy: always
+    restart: always
+    build:
+      context: .
+      dockerfile: Containerfile
+    ports:
+      - name: forest
+        published: 10999-11997
+        target: 10999
+        protocol: udp
+        mode: host
+      - name: cave
+        published: 10000-10998
+        target: 10998
+        protocol: udp
+        mode: host
+      - name: forest-steam
+        published: 27017-28015
+        target: 27017
+        protocol: udp
+        mode: host
+      - name: cave-steam
+        published: 26018-27016
+        target: 27016
+        protocol: udp
+        mode: host
+    volumes:
+      - type: bind
+        source: /opt/dst-server
+        target: /install
+      - type: bind
+        source: /opt/dst-server/ugc
+        target: /ugc
+      - type: bind
+        source: /data/dst/cluster
+        target: /cluster
+

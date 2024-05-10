@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 UGC_PATH="/ugc"
-MODS_PATH="/mods"
 INSTALL_PATH="/install"
 CLUSTER_PATH="/cluster"
 STEAMCMD="/root/steamcmd/steamcmd.sh"
@@ -38,10 +37,10 @@ function get_free_port() {
 }
 
 # 用软链接保证容器间 mods 文件夹隔离
-if [[ ! -L "$INSTALL_PATH/mods" ]]; then
-    rm -rf "$INSTALL_PATH/mods"
-    ln -s "$MODS_PATH" "$INSTALL_PATH/mods"
-fi
+# if [[ ! -L "$INSTALL_PATH/mods" ]]; then
+#     rm -rf "$INSTALL_PATH/mods"
+#     ln -s "$MODS_PATH" "$INSTALL_PATH/mods"
+# fi
 
 # 更新 steam 及服务端
 if [[ ! -f "$INSTALL_PATH/noupdate" ]]; then
@@ -79,13 +78,21 @@ done
 # 避免服务端启动默认创建 Master 分片文件夹
 sorted_ids=()
 mapfile -t sorted_ids < <(echo "${mod_ids[@]}" | tr ' ' '\n' | sort -nu)
-touch "$MODS_PATH/modsettings.lua"
-rm -f "$MODS_PATH/dedicated_server_mods_setup.lua"
+touch /tmp/modsettings.lua /tmp/dedicated_server_mods_setup.lua
+truncate -s0 /tmp/dedicated_server_mods_setup.lua
+ln -sf "/tmp/modsettings.lua" "$INSTALL_PATH/mods/modsettings.lua"
+ln -sf "/tmp/dedicated_server_mods_setup.lua" "$INSTALL_PATH/mods/dedicated_server_mods_setup.lua"
 for id in "${sorted_ids[@]}"; do
-    echo "ServerModSetup(\"$id\")" >>"$MODS_PATH/dedicated_server_mods_setup.lua"
+    echo "ServerModSetup(\"$id\")" >>"/tmp/dedicated_server_mods_setup.lua"
 done
-mkdir -p '/tmp/conf/c/s'
+
 free_port=$(get_free_port)
+if [[ -f "$INSTALL_PATH/proxy" ]]; then
+    export http_proxy="socks5://127.0.0.1:1080"
+    export https_proxy="socks5://127.0.0.1:1080"
+fi
+
+mkdir -p '/tmp/conf/c/s'
 ./dontstarve_dedicated_server_nullrenderer_x64 \
     -only_update_server_mods \
     -monitor_parent_process $$ \
@@ -97,6 +104,8 @@ free_port=$(get_free_port)
     -cluster 'c' \
     -shard 's' | sed -u 's/^/[MOD_UPDATE]: /'
 rm -rf '/tmp/conf'
+
+unset http_proxy https_proxy
 
 # 检查集群必需配置文件
 check_for_file "$CLUSTER_PATH/cluster.ini"

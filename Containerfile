@@ -3,7 +3,7 @@ LABEL maintainer="wh2099@outlook.com"
 
 USER root
 WORKDIR /
-VOLUME ["/ugc", "/install", "/cluster"]
+VOLUME ["mods", "/ugc", "/install", "/cluster"]
 
 # 更新 steamcmd
 RUN chmod u+w / && \
@@ -17,5 +17,4 @@ RUN apt-get update && \
 
 # 入口脚本
 COPY entrypoint.sh .
-ENTRYPOINT ["/bin/bash"]
-CMD ["/entrypoint.sh"]
+CMD ["/usr/bin/bash", "/entrypoint.sh"]

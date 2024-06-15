@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
+APP_ID=343050
 UGC_PATH="/ugc"
+MODS_PATH="/mods"
 INSTALL_PATH="/install"
 CLUSTER_PATH="/cluster"
-STEAMCMD="/root/steamcmd/steamcmd.sh"
-
-APP_ID=343050
+STEAMCMD="/steamcmd/steamcmd.sh"
 
 function fail() {
     echo Error: "$@" >&2
@@ -37,10 +37,10 @@ function get_free_port() {
 }
 
 # 用软链接保证容器间 mods 文件夹隔离
-# if [[ ! -L "$INSTALL_PATH/mods" ]]; then
-#     rm -rf "$INSTALL_PATH/mods"
-#     ln -s "$MODS_PATH" "$INSTALL_PATH/mods"
-# fi
+if [[ ! -L "$INSTALL_PATH/mods" ]]; then
+    rm -rf "$INSTALL_PATH/mods"
+    ln -s "$MODS_PATH" "$INSTALL_PATH/mods"
+fi
 
 # 更新 steam 及服务端
 if [[ ! -f "$INSTALL_PATH/noupdate" ]]; then
@@ -50,12 +50,16 @@ if [[ ! -f "$INSTALL_PATH/noupdate" ]]; then
         chmod u+w "$upper_install_path"
     fi
 
+    if [[ -f "$INSTALL_PATH/beta" ]]; then
+        BETA_ARGS="-beta updatebeta"
+    fi
+
     "$STEAMCMD" \
         +@ShutdownOnFailedCommand 1 \
         +@NoPromptForPassword 1 \
         +force_install_dir "$INSTALL_PATH" \
         +login anonymous \
-        +app_update "$APP_ID" \
+        +app_update "$APP_ID" "$BETA_ARGS" \
         +quit
 fi
 
@@ -88,8 +92,8 @@ done
 
 free_port=$(get_free_port)
 if [[ -f "$INSTALL_PATH/proxy" ]]; then
-    export http_proxy="socks5://127.0.0.1:1080"
-    export https_proxy="socks5://127.0.0.1:1080"
+    export HTTP_PROXY="socks5://127.0.0.1:1080"
+    export HTTPS_PROXY="socks5://127.0.0.1:1080"
 fi
 
 mkdir -p '/tmp/conf/c/s'
@@ -105,7 +109,7 @@ mkdir -p '/tmp/conf/c/s'
     -shard 's' | sed -u 's/^/[MOD_UPDATE]: /'
 rm -rf '/tmp/conf'
 
-unset http_proxy https_proxy
+unset HTTP_PROXY HTTPS_PROXY
 
 # 检查集群必需配置文件
 check_for_file "$CLUSTER_PATH/cluster.ini"

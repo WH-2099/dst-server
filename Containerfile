@@ -12,7 +12,7 @@ RUN chmod u+w / && \
 
 ARG DST_64_PKGS="libcurl3-gnutls procps"
 RUN apt-get update && \
-    apt-get install -y ${DST_64_PKGS} iproute2 && \
+    apt-get install -y ${DST_64_PKGS} && \
     apt-get -y clean
 
 # 入口脚本

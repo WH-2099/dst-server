@@ -25,17 +25,6 @@ function handle_term() {
     exit 0
 }
 
-function get_free_port() {
-    used_ports=$(ss -4tulnH | tr -s " " | cut -d" " -f5 | cut -d: -f2 | sort -nu)
-    for port in {50000..60000}; do
-        if ! echo "$used_ports" | grep -q "^$port$"; then
-            echo "$port"
-            return
-        fi
-        fail "Can't find a free port"
-    done
-}
-
 # 用软链接保证容器间 mods 文件夹隔离
 if [[ ! -L "$INSTALL_PATH/mods" ]]; then
     rm -rf "$INSTALL_PATH/mods"
@@ -90,18 +79,19 @@ for id in "${sorted_ids[@]}"; do
     echo "ServerModSetup(\"$id\")" >>"/tmp/dedicated_server_mods_setup.lua"
 done
 
-free_port=$(get_free_port)
 if [[ -f "$INSTALL_PATH/proxy" ]]; then
     export HTTP_PROXY="socks5://127.0.0.1:1080"
     export HTTPS_PROXY="socks5://127.0.0.1:1080"
 fi
 
 mkdir -p '/tmp/conf/c/s'
+port=$((30000 + RANDOM))
 ./dontstarve_dedicated_server_nullrenderer_x64 \
     -only_update_server_mods \
     -monitor_parent_process $$ \
-    -steam_master_server_port "$free_port" \
-    -steam_authentication_port $((free_port + 1)) \
+    -port "$port" \
+    -steam_master_server_port "$((port + 1))" \
+    -steam_authentication_port "$((port + 2))" \
     -ugc_directory "$UGC_PATH" \
     -persistent_storage_root '/tmp' \
     -conf_dir 'conf' \

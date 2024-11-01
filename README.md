@@ -1,6 +1,7 @@
 # 饥荒专服 Docker 镜像
-[![STEAM 商店头图](https://cdn.akamai.steamstatic.com/steam/apps/322330/header_alt_assets_41_schinese.jpg)](https://store.steampowered.com/app/322330/)
+[![STEAM 商店头图](https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/322330/header_alt_assets_38_schinese.jpg?t=1730150710)
 
+QQ 群：924715341
 
 ## 关键特性
   - 饥荒联机版（Don't Starve Together）

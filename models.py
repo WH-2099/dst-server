@@ -194,7 +194,7 @@ class ServerNetwork(BaseModel):
 class ServerAccount(BaseModel):
     """服务端账户配置"""
 
-    encode_user_path: bool = False
+    encode_user_path: bool = True
 
 
 class IniModel(BaseModel, ABC):

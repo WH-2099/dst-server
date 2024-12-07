@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
 
 """
 推断 Klei User ID 到玩家存档路径的编码形式

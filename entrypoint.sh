@@ -44,10 +44,8 @@ if [[ ! -f "$INSTALL_PATH/noupdate" ]]; then
     fi
 
     "$STEAMCMD" \
-        +@ShutdownOnFailedCommand 1 \
-        +@NoPromptForPassword 1 \
-        +force_install_dir "$INSTALL_PATH" \
         +login anonymous \
+        +force_install_dir "$INSTALL_PATH" \
         +app_update "$APP_ID" "$BETA_ARGS" \
         +quit
 fi

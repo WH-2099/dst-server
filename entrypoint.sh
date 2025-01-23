@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 APP_ID=343050
-UGC_PATH="/ugc"
-MODS_PATH="/mods"
 INSTALL_PATH="/install"
 CLUSTER_PATH="/cluster"
+MODS_PATH="$CLUSTER_PATH/mods"
+UGC_PATH="$MODS_PATH/ugc"
 STEAMCMD="/steamcmd/steamcmd.sh"
 
 function fail() {
@@ -25,21 +25,21 @@ function handle_term() {
     exit 0
 }
 
-# 用软链接保证容器间 mods 文件夹隔离
+# 软链接修改 mods 文件夹至存档下
 if [[ ! -L "$INSTALL_PATH/mods" ]]; then
     rm -rf "$INSTALL_PATH/mods"
     ln -s "$MODS_PATH" "$INSTALL_PATH/mods"
 fi
 
 # 更新 steam 及服务端
-if [[ ! -f "$INSTALL_PATH/noupdate" ]]; then
+if [[ ! -f "$CLUSTER_PATH/noupdate" ]]; then
     # Steam 会对安装路径的上层做权限判定，需要可写
     upper_install_path=$(dirname "$INSTALL_PATH")
     if [[ ! -w "$upper_install_path" ]]; then
         chmod u+w "$upper_install_path"
     fi
 
-    if [[ -f "$INSTALL_PATH/beta" ]]; then
+    if [[ -f "$CLUSTER_PATH/beta" ]]; then
         BETA_ARGS="-beta updatebeta"
     fi
 
@@ -54,7 +54,7 @@ fi
 cd "$INSTALL_PATH/bin64" || fail "can't cd to $INSTALL_PATH/bin64"
 
 # 检测分片文件夹名
-mapfile -t shards < <(find "$CLUSTER_PATH" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+mapfile -t shards < <(find "$CLUSTER_PATH" -mindepth 1 -maxdepth 1 -type d -not -name "mods" -exec basename {} \;)
 
 # 检查分片必需配置文件
 mod_ids=()
@@ -68,16 +68,15 @@ done
 # 使用临时分片文件夹，无需配置文件
 # 避免服务端启动默认创建 Master 分片文件夹
 sorted_ids=()
+mkdir -p $UGC_PATH
+touch $MODS_PATH/modsettings.lua $MODS_PATH/dedicated_server_mods_setup.lua
+truncate -s0 $MODS_PATH/dedicated_server_mods_setup.lua
 mapfile -t sorted_ids < <(echo "${mod_ids[@]}" | tr ' ' '\n' | sort -nu)
-touch /tmp/modsettings.lua /tmp/dedicated_server_mods_setup.lua
-truncate -s0 /tmp/dedicated_server_mods_setup.lua
-ln -sf "/tmp/modsettings.lua" "$INSTALL_PATH/mods/modsettings.lua"
-ln -sf "/tmp/dedicated_server_mods_setup.lua" "$INSTALL_PATH/mods/dedicated_server_mods_setup.lua"
 for id in "${sorted_ids[@]}"; do
-    echo "ServerModSetup(\"$id\")" >>"/tmp/dedicated_server_mods_setup.lua"
+    echo "ServerModSetup(\"$id\")" >>$MODS_PATH/dedicated_server_mods_setup.lua
 done
 
-if [[ -f "$INSTALL_PATH/proxy" ]]; then
+if [[ -f "$CLUSTER_PATH/proxy" ]]; then
     export HTTP_PROXY="socks5://127.0.0.1:1080"
     export HTTPS_PROXY="socks5://127.0.0.1:1080"
 fi

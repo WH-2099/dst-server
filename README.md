@@ -1,50 +1,46 @@
-# 饥荒专服 Docker 镜像
-![STEAM 商店头图](https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/322330/header_alt_assets_38_schinese.jpg?t=1730150710)
+# 饥荒专服容器镜像
+![STEAM 商店头图](https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/322330/header_schinese.jpg?t=1736195686)
 
-QQ 群：924715341
+QQ 群：**924715341**
+QQ 频道：**dontstarve**
 
 ## 关键特性
   - 饥荒联机版（Don't Starve Together）
   - 专用服务器（Dedicated Server）
-  - Docker 镜像（Docker Image）
+  - 容器镜像（Container Image）
   - STEAM 平台（Steam Platform）
   - 64 位 Linux 系统（64-bit Linux System）
   - **极简纯净（[KISS 原则](https://zh.wikipedia.org/wiki/KISS%E5%8E%9F%E5%88%99)）**
 
 
 ## 首次安装
-1. 请确保服务器已经安装了 [Docker 引擎](https://docs.docker.com/engine/)
-    - 如果没有安装，可参照官网指导 [Install Docker Engine](https://docs.docker.com/engine/install/)
-
-2. 创建用于存储 **游戏服务端** 和 **存档数据** 的路径
+1. 请确保服务器已经安装了容器运行时环境，比如 [Podman](https://docs.podman.io/en/latest/index.html)
+2. 创建用于存储 **存档数据** 的路径
     ```shell
-    mkdir -p "/opt/dst-server" "${HOME}/cluster" 
+    mkdir -p "${HOME}/cluster"
     ```
     - 可自定义，与启动容器命令中的内容同步修改即可
 
 3. 上传配置文件夹
-   
+
    参照官方说明 [Configure and download the server settings](https://forums.kleientertainment.com/forums/topic/64441-dedicated-server-quick-setup-guide-linux/#:~:text=3.%20Configure%20and%20download%20the%20server%20settings)，将下载的压缩文件解压，获得*配置文件夹*，将*配置文件夹* **整个** 上传到*存储路径*（上一步提到的）
    - 配置文件夹具体名称不做要求，只要确保*存储路径*下的子文件夹唯一即可（常见名称：“Cluster_1”、“MyDediServer”）
    - 想自定义世界的话，可以用客户端存档中的配置文件覆盖服务端的对应文件（参见后文 [配置文件说明](#配置文件说明)）
    - 请注意 cluster_token.txt 为专服独有，且必须通过 [官方管理页面](https://accounts.klei.com/account/game/servers?game=DontStarveTogether) 获取
 
-4. 拉取游戏专服镜像并启动容器
+4. 拉取镜像并启动容器
     ```shell
-    sudo docker run --name dst -d --restart unless-stopped --network host -v ${HOME}/cluster:/cluster -v /opt/dst-server:/install wh2099/dst-server:latest
+    sudo podman run --name dst -d --network host -v ${HOME}/cluster:/cluster -v ghcr.io/wh2099/dst-server:latest
     ```
-   - **初次启动需要进行 STEAM 更新并下载游戏服务端本体，耗时较久**
-   - 直接配置 `--network host`，简单粗暴且[网络性能会好那么一丢丢](https://stackoverflow.com/questions/21691540/how-to-optimize-performance-for-a-docker-container/21707838#21707838)（当然你也可以自行配置接口映射）
-   - `--restart unless-stopped` 的作用是保证游戏服务端开机自启，非必需 
 
 
 ## 维护
 ### 基础命令
-*本质上就是常用的 docker 容器控制命令*
-- 关闭（会自动存档） `docker stop dst`
-- 启动（非首次） `docker start dst`
-- 重启 `docker restart dst`
-- 查看日志 `docker logs dst`
+*本质上就是常用的容器控制命令*
+- 关闭（会自动存档） `podman stop dst`
+- 启动（非首次） `podman start dst`
+- 重启 `podman restart dst`
+- 查看日志 `podman logs dst`
 
 ### 游戏控制台命令
 可通过集群（分片）文件夹下的命名管道文件 `console` 向服务端发送控制台命令，如：
@@ -301,7 +297,6 @@ mods  # mod 相关，在游戏服务端安装目录下
 ## 参考信息
 1. [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD)
 2. [Dedicated Server Quick Setup Guide - Linux](https://forums.kleientertainment.com/forums/topic/64441-dedicated-server-quick-setup-guide-linux/)
-3. [Docker Reference Documentation](https://docs.docker.com/reference/)
 
 
 ## 开源许可证

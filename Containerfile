@@ -16,7 +16,7 @@ RUN apt-get update && \
 RUN chmod u+w / && \
     mv /home/steam/steamcmd / && \
     /steamcmd/steamcmd.sh +quit && \
-    /steamcmd/steamcmd.sh +login anonymous +force_install_dir /install +app_update 343050 validate +quit
+    /steamcmd/steamcmd.sh +force_install_dir /install +login anonymous +app_update 343050 validate +quit
 
 # 入口脚本
 COPY entrypoint.sh .

@@ -19,7 +19,7 @@ jobs:
           tags: latest
           containerfiles: Containerfile
 
-      - name: Push To GHCR
+      - name: Push To Registry
         id: push-to-quay
         uses: redhat-actions/push-to-registry@v2
         with:

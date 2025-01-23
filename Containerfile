@@ -1,10 +1,9 @@
 FROM docker.io/cm2network/steamcmd:root
 LABEL maintainer="wh2099@outlook.com"
 
+ARG BETA
 ARG DST_64_PKGS="libcurl3-gnutls procps"
-ARG BETA=""
 
-USER root
 WORKDIR /
 VOLUME ["/cluster"]
 
@@ -13,10 +12,10 @@ RUN apt-get update && \
     apt-get install -y ${DST_64_PKGS} && \
     apt-get -y clean
 
-# 更新 steamcmd 并安装 DST 服务端
+# 安装 DST 服务端
 RUN chmod u+w / && \
-    cp -r /home/steam/steamcmd / && \
-    /steamcmd/steamcmd.sh +force_install_dir /install +login anonymous +app_update 343050 ${BETA} validate +quit
+    chown -R root:root ${STEAMCMDDIR} && \
+    ${STEAMCMDDIR}/steamcmd.sh +force_install_dir /install +login anonymous +app_update 343050 ${BETA:+ -beta updatebeta} validate +quit
 
 # 入口脚本
 COPY entrypoint.sh .

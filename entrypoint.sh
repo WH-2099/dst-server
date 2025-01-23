@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 
-APP_ID=343050
 INSTALL_PATH="/install"
 CLUSTER_PATH="/cluster"
 MODS_PATH="$CLUSTER_PATH/mods"
 UGC_PATH="$MODS_PATH/ugc"
-STEAMCMD="/steamcmd/steamcmd.sh"
 
 function fail() {
     echo Error: "$@" >&2
@@ -21,7 +19,7 @@ function check_for_file() {
 # 信号处理，优雅关闭服务器
 trap handle_term TERM
 function handle_term() {
-    killall -ws TERM 'steamcmd' 'dontstarve_dedicated_server_nullrenderer_x64'
+    killall -ws TERM 'dontstarve_dedicated_server_nullrenderer_x64'
     exit 0
 }
 
@@ -57,7 +55,7 @@ for id in "${sorted_ids[@]}"; do
     echo "ServerModSetup(\"$id\")" >>$MODS_PATH/dedicated_server_mods_setup.lua
 done
 
-if [[ -f "$CLUSTER_PATH/proxy" ]]; then
+if [[ -f "$MODS_PATH/proxy" ]]; then
     export HTTP_PROXY="socks5://127.0.0.1:1080"
     export HTTPS_PROXY="socks5://127.0.0.1:1080"
 fi

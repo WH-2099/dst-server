@@ -5,7 +5,7 @@ ARG DST_64_PKGS="libcurl3-gnutls procps"
 
 USER root
 WORKDIR /
-VOLUME ["/install", "/cluster"]
+VOLUME ["/cluster"]
 
 # 安装 DST 服务端依赖
 RUN apt-get update && \

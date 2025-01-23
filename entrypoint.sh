@@ -31,25 +31,6 @@ if [[ ! -L "$INSTALL_PATH/mods" ]]; then
     ln -s "$MODS_PATH" "$INSTALL_PATH/mods"
 fi
 
-# 更新 steam 及服务端
-if [[ ! -f "$CLUSTER_PATH/noupdate" ]]; then
-    # Steam 会对安装路径的上层做权限判定，需要可写
-    upper_install_path=$(dirname "$INSTALL_PATH")
-    if [[ ! -w "$upper_install_path" ]]; then
-        chmod u+w "$upper_install_path"
-    fi
-
-    if [[ -f "$CLUSTER_PATH/beta" ]]; then
-        BETA_ARGS="-beta updatebeta"
-    fi
-
-    "$STEAMCMD" \
-        +force_install_dir "$INSTALL_PATH" \
-        +login anonymous \
-        +app_update "$APP_ID" "$BETA_ARGS" \
-        +quit
-fi
-
 # 进入服务端目录
 cd "$INSTALL_PATH/bin64" || fail "can't cd to $INSTALL_PATH/bin64"
 

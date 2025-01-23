@@ -30,7 +30,7 @@ QQ 频道：**dontstarve**
 
 4. 拉取镜像并启动容器
     ```shell
-    sudo podman run --name dst -d --network host -v ${HOME}/cluster:/cluster -v ghcr.io/wh2099/dst-server:latest
+    sudo podman run --name dst -d --network host -v ${HOME}/cluster:/cluster -v docker.io/wh2099/dst-server:latest
     ```
 
 

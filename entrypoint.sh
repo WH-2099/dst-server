@@ -44,8 +44,8 @@ if [[ ! -f "$CLUSTER_PATH/noupdate" ]]; then
     fi
 
     "$STEAMCMD" \
-        +login anonymous \
         +force_install_dir "$INSTALL_PATH" \
+        +login anonymous \
         +app_update "$APP_ID" "$BETA_ARGS" \
         +quit
 fi

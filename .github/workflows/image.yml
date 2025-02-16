@@ -32,6 +32,7 @@ jobs:
           if [ "$NEW_VERSION" -gt "$OLD_VERSION" ]; then
             echo "Need Update $OLD_VERSION -> $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
             echo "need_update=true" >> $GITHUB_OUTPUT
+            echo -n $NEW_VERSION > version.txt
           else
             echo "Skip Update $OLD_VERSION : $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
             echo "need_update=false" >> $GITHUB_OUTPUT
@@ -80,6 +81,7 @@ jobs:
           if [ "$NEW_VERSION" -gt "$OLD_VERSION" ]; then
             echo "Need Update $OLD_VERSION -> $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
             echo "need_update=true" >> $GITHUB_OUTPUT
+            echo -n $NEW_VERSION > beta-version.txt
           else
             echo "Skip Update $OLD_VERSION : $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
             echo "need_update=false" >> $GITHUB_OUTPUT

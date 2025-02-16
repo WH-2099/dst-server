@@ -2,8 +2,7 @@
 name = 'dst-server'
 readme = 'README.md'
 version = '0.3'
-license = { file = 'LICENSE' }
 authors = [{ name = 'WH-2099', email = 'wh2099@outlook.com' }]
-description = '饥荒专服 Docker 镜像'
-requires-python = '>=3.12'
+description = '饥荒专服房间管理'
+requires-python = '>=3.13'
 dependencies = ['aiohttp', 'beautifulsoup4', 'pydantic']

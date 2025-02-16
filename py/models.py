@@ -10,7 +10,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, TypeAdapter, field_validator
 
-from enums import OnewordType, Platform, Region, Role, Season
+from py.enums import OnewordType, Platform, Region, Role, Season
 from utils import lua_table_to_list
 
 

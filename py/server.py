@@ -6,7 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import ClassVar
 
-from enums import EventType
+from py.enums import EventType
 from models import (
     ClusterConfig,
     ClusterShard,

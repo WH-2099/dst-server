@@ -10,7 +10,7 @@ from aiohttp import ClientError, ClientSession, TCPConnector, request
 from bs4 import BeautifulSoup
 from pydantic import ValidationError
 
-from enums import OnewordType, Platform, Region, VersionType
+from py.enums import OnewordType, Platform, Region, VersionType
 from models import LobbyData, Oneword, RoomData
 
 logger = getLogger(__name__)

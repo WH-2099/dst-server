@@ -5,7 +5,7 @@ on:
     branches: [main]
   schedule:
     # 通常的更新都在 UTC 22:00 前
-    - cron: "0 22 * * *"
+    - cron: "0 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -14,20 +14,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Image
-        id: build
-        uses: redhat-actions/buildah-build@v2
-        with:
-          image: dst-server
-          tags: latest
-          containerfiles: |
-            Containerfile
-
       - name: Check Version
         id: check
         run: |
-          IMAGE="${{ steps.build.outputs.image-with-tag }}"
-          NEW_VERSION=$(podman run --rm $IMAGE cat /install/version.txt)
+          NEW_VERSION=$(curl -s https://s3.amazonaws.com/dstbuilds/builds.json | jq '.release[-1] | tonumber')
           OLD_VERSION=$(cat version.txt)
           if [ "$NEW_VERSION" -gt "$OLD_VERSION" ]; then
             echo "Need Update $OLD_VERSION -> $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
@@ -37,6 +27,16 @@ jobs:
             echo "Skip Update $OLD_VERSION : $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
             echo "need_update=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: Build Image
+        if: ${{ steps.check.outputs.need_update == 'true' }}
+        id: build
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: dst-server
+          tags: latest
+          containerfiles: |
+            Containerfile
 
       - name: Push To Registry
         if: ${{ steps.check.outputs.need_update == 'true' }}
@@ -61,22 +61,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Image
-        id: build
-        uses: redhat-actions/buildah-build@v2
-        with:
-          image: dst-server
-          tags: beta
-          containerfiles: |
-            Containerfile
-          build-args: |
-            BETA=1
-
       - name: Check Version
         id: check
         run: |
-          IMAGE="${{ steps.build.outputs.image-with-tag }}"
-          NEW_VERSION=$(podman run --rm $IMAGE cat /install/version.txt)
+          NEW_VERSION=$(curl -s https://s3.amazonaws.com/dstbuilds/builds.json | jq '.updatebeta[-1] | tonumber')
           OLD_VERSION=$(cat version.txt)
           if [ "$NEW_VERSION" -gt "$OLD_VERSION" ]; then
             echo "Need Update $OLD_VERSION -> $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
@@ -86,6 +74,18 @@ jobs:
             echo "Skip Update $OLD_VERSION : $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
             echo "need_update=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: Build Image
+        if: ${{ steps.check.outputs.need_update == 'true' }}
+        id: build
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: dst-server
+          tags: beta
+          containerfiles: |
+            Containerfile
+          build-args: |
+            BETA=1
 
       - name: Push To Registry
         if: ${{ steps.check.outputs.need_update == 'true' }}

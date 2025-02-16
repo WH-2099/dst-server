@@ -29,12 +29,11 @@ jobs:
           IMAGE="${{ steps.build.outputs.image-with-tag }}"
           NEW_VERSION=$(podman run --rm $IMAGE cat /install/version.txt)
           OLD_VERSION=$(cat version.txt)
-          echo "$NEW_VERSION : $OLD_VERSION"
           if [ "$NEW_VERSION" -gt "$OLD_VERSION" ]; then
-            echo "Continue Update"
+            echo "Need Update $OLD_VERSION -> $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
             echo "need_update=true" >> $GITHUB_OUTPUT
           else
-            echo "Skip Update"
+            echo "Skip Update $OLD_VERSION : $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
             echo "need_update=false" >> $GITHUB_OUTPUT
           fi
 
@@ -78,12 +77,11 @@ jobs:
           IMAGE="${{ steps.build.outputs.image-with-tag }}"
           NEW_VERSION=$(podman run --rm $IMAGE cat /install/version.txt)
           OLD_VERSION=$(cat version.txt)
-          echo "$NEW_VERSION : $OLD_VERSION"
           if [ "$NEW_VERSION" -gt "$OLD_VERSION" ]; then
-            echo "Continue Update"
+            echo "Need Update $OLD_VERSION -> $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
             echo "need_update=true" >> $GITHUB_OUTPUT
           else
-            echo "Skip Update"
+            echo "Skip Update $OLD_VERSION : $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
             echo "need_update=false" >> $GITHUB_OUTPUT
           fi
 

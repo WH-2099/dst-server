@@ -65,7 +65,7 @@ jobs:
         id: check
         run: |
           NEW_VERSION=$(curl -s https://s3.amazonaws.com/dstbuilds/builds.json | jq '.updatebeta[-1] | tonumber')
-          OLD_VERSION=$(cat version.txt)
+          OLD_VERSION=$(cat beta-version.txt)
           if [ "$NEW_VERSION" -gt "$OLD_VERSION" ]; then
             echo "Need Update $OLD_VERSION -> $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
             echo "need_update=true" >> $GITHUB_OUTPUT

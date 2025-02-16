@@ -3,6 +3,9 @@ name: Build and Push Image
 on:
   push:
     branches: [main]
+  schedule:
+    # 通常的更新都在 UTC 22:00 前
+    - cron: "0 22 * * *"
   workflow_dispatch:
 
 jobs:
@@ -20,7 +23,23 @@ jobs:
           containerfiles: |
             Containerfile
 
+      - name: Check Version
+        id: check
+        run: |
+          IMAGE="${{ steps.build.outputs.image }}"
+          NEW_VERSION=$(podman run --rm $IMAGE cat /install/version.txt)
+          OLD_VERSION=$(cat version.txt)
+          echo "$NEW_VERSION : $OLD_VERSION"
+          if [ "$NEW_VERSION" -gt "$OLD_VERSION" ]; then
+            echo "Continue Update" >> $GITHUB_OUTPUT
+            echo "need_update=true" >> $GITHUB_OUTPUT
+          else
+            echo "Skip Update" >> $GITHUB_OUTPUT
+            echo "need_update=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Push To Registry
+        if: ${{ steps.check.outputs.need_update == 'true' }}
         id: push
         uses: redhat-actions/push-to-registry@v2
         with:
@@ -29,6 +48,13 @@ jobs:
           registry: docker.io/wh2099
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Update version.txt
+        if: ${{ steps.check.outputs.need_update == 'true' }}
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: version.txt
+          default_author: github_actions
 
   beta:
     runs-on: ubuntu-latest
@@ -46,7 +72,23 @@ jobs:
           build-args: |
             BETA=1
 
+      - name: Check Version
+        id: check
+        run: |
+          IMAGE="${{ steps.build.outputs.image }}"
+          NEW_VERSION=$(podman run --rm $IMAGE cat /install/version.txt)
+          OLD_VERSION=$(cat version.txt)
+          echo "$NEW_VERSION : $OLD_VERSION"
+          if [ "$NEW_VERSION" -gt "$OLD_VERSION" ]; then
+            echo "Continue Update" >> $GITHUB_OUTPUT
+            echo "need_update=true" >> $GITHUB_OUTPUT
+          else
+            echo "Skip Update" >> $GITHUB_OUTPUT
+            echo "need_update=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Push To Registry
+        if: ${{ steps.check.outputs.need_update == 'true' }}
         id: push
         uses: redhat-actions/push-to-registry@v2
         with:
@@ -55,3 +97,10 @@ jobs:
           registry: docker.io/wh2099
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Update version.txt
+        if: ${{ steps.check.outputs.need_update == 'true' }}
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: beta-version.txt
+          default_author: github_actions

@@ -4,8 +4,7 @@ on:
   push:
     branches: [main]
   schedule:
-    # 通常的更新都在 UTC 22:00 前
-    - cron: "0 * * * *"
+    - cron: "*/15 * * * *"
   workflow_dispatch:
 
 jobs:

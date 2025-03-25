@@ -4,6 +4,10 @@
 QQ 群：**924715341**
 QQ 频道：**dontstarve**
 
+
+## 镜像地址 quay.io/wh2099/dst-server
+
+
 ## 关键特性
   - 饥荒联机版（Don't Starve Together）
   - 专用服务器（Dedicated Server）
@@ -223,10 +227,11 @@ mods  # mod 相关，在游戏服务端安装目录下
 
 ; 集群的游戏模式。
 ; 这个字段相当于 "创建游戏 "界面中的 "游戏模式 "字段。
-; 有效值如下（不包含括号及括号中内容）：
+; 常见有效值如下（不包含括号及括号中内容）：
 ; survival  （生存）
 ; endless  （无尽）
 ; wilderness  （荒野）
+; 对于熔炉、暴食等 mod，这里可能需要设置独立的值，请参考对应 mod 说明。
 ; game_mode = survival
 
 ; 当没有玩家连接时，暂停服务器。
@@ -275,7 +280,7 @@ mods  # mod 相关，在游戏服务端安装目录下
 [ACCOUNT]
 ; 是否对用户存档路径进行编码。
 ; 若设为 true，直接以 Klei ID 作为路径，需要文件系统支持区分大小写。
-; 若设为 false，采用经编码的路径，不依赖文件系统的大小写特性。
+; 若设为 false，玩家数据使用编码后的文件夹名，不依赖文件系统的大小写特性。
 ; encode_user_path = false
 ```
 
@@ -285,7 +290,6 @@ mods  # mod 相关，在游戏服务端安装目录下
 -- 有两个函数用于安装模组，ServerModSetup 和 ServerModCollectionSetup。
 -- 该脚本将在启动时执行，下载指定的 mod 到 mods 目录。
 -- ServerModSetup 参数为 模组创意工坊编号 的 字符串。
---ServerModCollectionSetup takes a string of a specific mod's Workshop id. It will download all the mods in the collection and install them to the mod directory on boot.
     -- 模组或合计对应的创意工坊页面，其网址末尾的数字就是编号。
     -- 示例模组 https://steamcommunity.com/sharedfiles/filedetails/?id=351325790
 	-- ServerModSetup("351325790")

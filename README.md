@@ -1,28 +1,29 @@
 # 饥荒专服容器镜像
+
 ![STEAM 商店头图](https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/322330/header_schinese.jpg?t=1736195686)
 
-QQ 群：**924715341**
-QQ 频道：**dontstarve**
-
+[Steam 群组](https://steamcommunity.com/groups/lst99)
 
 ## 镜像地址 quay.io/wh2099/dst-server
 
-
 ## 关键特性
-  - 饥荒联机版（Don't Starve Together）
-  - 专用服务器（Dedicated Server）
-  - 容器镜像（Container Image）
-  - STEAM 平台（Steam Platform）
-  - 64 位 Linux 系统（64-bit Linux System）
-  - **极简纯净（[KISS 原则](https://zh.wikipedia.org/wiki/KISS%E5%8E%9F%E5%88%99)）**
 
+- 饥荒联机版（Don't Starve Together）
+- 专用服务器（Dedicated Server）
+- 容器镜像（Container Image）
+- STEAM 平台（Steam Platform）
+- 64 位 Linux 系统（64-bit Linux System）
+- **极简纯净（[KISS 原则](https://zh.wikipedia.org/wiki/KISS%E5%8E%9F%E5%88%99)）**
 
 ## 首次安装
+
 1. 请确保服务器已经安装了容器运行时环境，比如 [Podman](https://docs.podman.io/en/latest/index.html)
 2. 创建用于存储 **存档数据** 的路径
+
     ```shell
     mkdir -p "${HOME}/cluster"
     ```
+
     - 可自定义，与启动容器命令中的内容同步修改即可
 
 3. 上传配置文件夹
@@ -33,25 +34,32 @@ QQ 频道：**dontstarve**
    - 请注意 cluster_token.txt 为专服独有，且必须通过 [官方管理页面](https://accounts.klei.com/account/game/servers?game=DontStarveTogether) 获取
 
 4. 拉取镜像并启动容器
+
     ```shell
     sudo podman run --name dst -d --network host -v ${HOME}/cluster:/cluster -v quay.io/wh2099/dst-server:latest
     ```
 
-
 ## 维护
+
 ### 基础命令
-*本质上就是常用的容器控制命令*
+
+本质上就是常用的容器控制命令
+
 - 关闭（会自动存档） `podman stop dst`
 - 启动（非首次） `podman start dst`
 - 重启 `podman restart dst`
 - 查看日志 `podman logs dst`
 
 ### 游戏控制台命令
+
 可通过集群（分片）文件夹下的命名管道文件 `console` 向服务端发送控制台命令，如：
+
 ```shell
 echo 'c_announce("服务器需要维护，请大家提前做好准备")' > "Cluster_1/console"
 ```
+
 部分常用的控制台命令：
+
 - 重新加载世界 `c_reset()`
 - 重新生成世界 `c_regenerateworld()`
 - 手动存档 `c_save()`
@@ -62,23 +70,25 @@ echo 'c_announce("服务器需要维护，请大家提前做好准备")' > "Clus
 - ……
 
 ### 集群架构
+>
 > 饥荒联机版专用服务器的常用架构是分片集群。每个世界都是独立的分片，同时有唯一的分片作为主控，主控及其控制的所有分片共同构成一个集群。以最常见的“森林 + 洞穴”为例，其本质是双分片集群，森林与洞穴都是独立启动的进程，森林为主控。
 
-*所谓的“多层世界”一般指分片数量 >2 的集群*
+所谓的“多层世界”一般指分片数量 >2 的集群
 
 本项目在启动服务端时，会自动识别配置目录（即挂载到容器内 `/data/conf` 的目录）结构，不需要手动指定具体的集群及分片名称。只需确保配置目录符合以下规则即可：
-  - 配置目录下只能有唯一的集群配置文件夹，名称无限定（常见为 `Cluster_1`）
-  - 集群配置文件夹下必须存在 `cluster.ini`（集群配置文件）
-  - 集群配置文件夹下必须存在 `cluster_token.txt` （集群认证令牌）
-  - 集群配置文件夹下只可存在两种文件夹：
-    - `mods` （模组文件夹，非必需，启动后自动生成）
-    - 分片配置文件夹，名称无限定（常见为 `Master`、`Caves`）
-  - 分片配置文件夹下必须存在 `server.ini`（分片配置文件）
 
-**请注意，本项目将启动所有存在配置文件夹的分片，故而多层世界无需多层启动，整合所有分片配置到集群下即可**
+- 配置目录下只能有唯一的集群配置文件夹，名称无限定（常见为 `Cluster_1`）
+- 集群配置文件夹下必须存在 `cluster.ini`（集群配置文件）
+- 集群配置文件夹下必须存在 `cluster_token.txt` （集群认证令牌）
+- 集群配置文件夹下只可存在两种文件夹：
+  - `mods` （模组文件夹，非必需，启动后自动生成）
+  - 分片配置文件夹，名称无限定（常见为 `Master`、`Caves`）
+- 分片配置文件夹下必须存在 `server.ini`（分片配置文件）
 
+请注意，本项目将启动所有存在配置文件夹的分片，故而多层世界无需多层启动，整合所有分片配置到集群下即可
 
 ## TODO
+
 - [ ] Python 入口
   - [x] 服务端作为受控子进程
   - [ ] IPC
@@ -91,12 +101,13 @@ echo 'c_announce("服务器需要维护，请大家提前做好准备")' > "Clus
     - [ ] 玩家死亡
     - [ ] 玩家发言
 
-
 ## 配置文件说明
+
 *专服配置文件结构及变量含义，注释中的赋值均为默认值。*
 
-**干货内容，看不懂跳过就好**
-```
+干货内容，看不懂跳过就好
+
+```text
 Cluster_1  # 以集群方式提供服务，地面和洞穴是两个独立的服务器进程
 ├── cluster.ini  # 集群配置
 ├── cluster_token.txt  # 集群认证码
@@ -121,7 +132,8 @@ mods  # mod 相关，在游戏服务端安装目录下
 ```
 
 ### cluster.ini
-```
+
+```ini
 [MISC]
 ; 要保留的最大快照数量。
 ; 这些快照在每次保存时都会被创建，并在 "主机游戏 "屏幕的 "回滚 "标签中可用。
@@ -242,7 +254,8 @@ mods  # mod 相关，在游戏服务端安装目录下
 ```
 
 ### server.ini
-```
+
+```ini
 [SHARD]
 ; 设置一个分片为集群的主分片。
 ; 每个集群必须有一个主服务器。
@@ -285,6 +298,7 @@ mods  # mod 相关，在游戏服务端安装目录下
 ```
 
 ### dedicated_server_mods_setup.lua
+
 ```lua
 -- 两个减号表示本行内容为注释，不会被执行
 -- 有两个函数用于安装模组，ServerModSetup 和 ServerModCollectionSetup。
@@ -292,16 +306,16 @@ mods  # mod 相关，在游戏服务端安装目录下
 -- ServerModSetup 参数为 模组创意工坊编号 的 字符串。
     -- 模组或合计对应的创意工坊页面，其网址末尾的数字就是编号。
     -- 示例模组 https://steamcommunity.com/sharedfiles/filedetails/?id=351325790
-	-- ServerModSetup("351325790")
+ -- ServerModSetup("351325790")
     -- 示例合集 https://steamcommunity.com/sharedfiles/filedetails/?id=2594933855
-	-- ServerModCollectionSetup("2594933855")
+ -- ServerModCollectionSetup("2594933855")
 ```
 
-
 ## 参考信息
+
 1. [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD)
 2. [Dedicated Server Quick Setup Guide - Linux](https://forums.kleientertainment.com/forums/topic/64441-dedicated-server-quick-setup-guide-linux/)
 
-
 ## 开源许可证
+
 [![GPLv3](https://www.gnu.org/graphics/gplv3-or-later.png)](https://www.gnu.org/licenses/gpl-3.0.html)

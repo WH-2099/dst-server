@@ -1,22 +1,4 @@
-from enum import Flag, StrEnum
-
-
-class EventType(StrEnum):
-    """事件类型"""
-
-    PLAYER_LEAVE = "[Leave Announcement]"
-    PLAYER_JOIN = "[Join Announcement]"
-    PLAYER_SAY = "[Say]"
-    SERVER_REGISTERED = "Server registered"
-
-
-class Intention(StrEnum):
-    """游戏风格"""
-
-    SOCIAL = "social"  # 社交
-    COOPERATIVE = "cooperative"  # 合作
-    COMPETITIVE = "competitive"  # 竞争
-    MADNESS = "madness"  # 疯狂
+from enum import Flag, StrEnum, auto
 
 
 class OnewordType(StrEnum):
@@ -60,35 +42,81 @@ class Region(StrEnum):
 class Role(StrEnum):
     """游戏角色"""
 
-    WILSON = "wilson"
-    WILLOW = "willow"
-    WENDY = "wendy"
-    WOLFGANG = "wolfgang"
-    WX78 = "wx78"
-    WICKERBOTTOM = "wickerbottom"
-    WES = "wes"
-    WAXWELL = "waxwell"
-    WOODIE = "woodie"
-    WATHGRITHR = "wathgrithr"
-    WEBBER = "webber"
-    WINONA = "winona"
-    WORTOX = "wortox"
-    WORMWOOD = "wormwood"
-    WARLY = "warly"
-    WURT = "wurt"
-    WALTER = "walter"
-    WANDA = "wanda"
-    WONKEY = "wonkey"
+    WILSON = auto()
+    WILLOW = auto()
+    WENDY = auto()
+    WOLFGANG = auto()
+    WX78 = auto()
+    WICKERBOTTOM = auto()
+    WES = auto()
+    WAXWELL = auto()
+    WOODIE = auto()
+    WATHGRITHR = auto()
+    WEBBER = auto()
+    WINONA = auto()
+    WORTOX = auto()
+    WORMWOOD = auto()
+    WARLY = auto()
+    WURT = auto()
+    WALTER = auto()
+    WANDA = auto()
+    WONKEY = auto()
     UNKNOWN = ""
+
+
+class Intent(StrEnum):
+    """游戏风格"""
+
+    ENDLESS = auto()
+    LIGHTSOUT = auto()
+    RELAXED = auto()
+    SURVIVAL = auto()
+    WILDERNESS = auto()
+    COOPERATIVE = auto()
+    OCEANFISHING = auto()
 
 
 class Season(StrEnum):
     """游戏季节"""
 
-    AUTUMN = "autumn"
-    WINTER = "winter"
-    SPRING = "spring"
-    SUMMER = "summer"
+    AUTUMN = auto()
+    """秋季"""
+
+    WINTER = auto()
+    """冬季"""
+
+    SPRING = auto()
+    """春季"""
+
+    SUMMER = auto()
+    """夏季"""
+
+    MILD = auto()
+    """温和季"""
+
+    HURRICANE = auto()
+    """飓风季"""
+
+    MONSOON = auto()
+    """雨季"""
+
+    DRY = auto()
+    """旱季"""
+
+    TEMPERATE = auto()
+    """平和季"""
+
+    HUMID = auto()
+    """潮湿季"""
+
+    LUSH = auto()
+    """繁茂季"""
+
+    APORKALYPSE = auto()
+
+    WET = auto()
+
+    GREEN = auto()
 
 
 class VersionType(StrEnum):

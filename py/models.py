@@ -8,9 +8,8 @@ from pathlib import Path
 from typing import Annotated, Self
 from uuid import UUID
 
+from enums import Intent, OnewordType, Platform, Region, Role, Season
 from pydantic import BaseModel, Field, TypeAdapter, field_validator
-
-from py.enums import OnewordType, Platform, Region, Role, Season
 from utils import lua_table_to_list
 
 
@@ -19,23 +18,25 @@ class Player(BaseModel):
     """玩家"""
 
     name: str
-    kuid: None | str = None
-    prefab: None | Role = None
-    netid: None | int = None
-    ip: None | IPv4Address = None
+    kuid: str
+    role: Role | None = None
+    steam_id: int | None = None
+    ip: IPv4Address | None = None
 
 
 class Secondary(BaseModel):
     """次级分片信息"""
 
     id: str
-    port: None | int = None
-    addr: None | Annotated[IPv4Address, Field(alias="__addr")] = None
-    steamid: None | str = None
+    port: int | None = None
+    addr: Annotated[IPv4Address | None, Field(alias="__addr")] = None
+    steamid: str | None = None
 
 
-class LobbyData(BaseModel, populate_by_name=True):
+class LobbyData(BaseModel):
     """大厅数据"""
+
+    region: Region  # 这个是额外添加的非接口字段
 
     row_id: Annotated[str, Field(alias="__rowId")]
     name: str
@@ -58,15 +59,15 @@ class LobbyData(BaseModel, populate_by_name=True):
     platform: Platform
     session: str
     guid: str
-    intent: str
+    intent: Intent
     steamroom: str
-    region: Region  # 这个是额外添加的非接口字段
-
-    tags: None | str = None
-    mode: None | str = None
-    season: None | Season = None
-    steamid: None | str = None
-    secondaries: None | dict[str, Secondary] = None
+    steamclanid: str | None = None
+    tags: str | None = None
+    mode: str | None = None
+    season: Season | None = None
+    ownernetid: str | None = None
+    steamid: str | None = None
+    secondaries: dict[str, Secondary] | None = None
 
     @property
     def connect_code(self) -> str:
@@ -76,6 +77,11 @@ class LobbyData(BaseModel, populate_by_name=True):
 class RoomData(LobbyData):
     """房间数据"""
 
+    row_id: Annotated[str, Field(alias="__rowId")]
+    name: str
+    addr: Annotated[IPv4Address, Field(alias="__addr")]
+    port: int
+    host: str
     tick: int
     clientmodsoff: bool
     nat: int
@@ -105,7 +111,7 @@ class RoomData(LobbyData):
         return players
 
 
-class Oneword(BaseModel, populate_by_name=True):
+class Oneword(BaseModel):
     """一言"""
 
     id: int
@@ -194,7 +200,7 @@ class ServerNetwork(BaseModel):
 class ServerAccount(BaseModel):
     """服务端账户配置"""
 
-    encode_user_path: bool = True
+    encode_user_path: bool = False
 
 
 class IniModel(BaseModel, ABC):

@@ -6,25 +6,50 @@ on:
   schedule:
     - cron: "0 */6 * * *"
   workflow_dispatch:
+    inputs:
+      force_build:
+        description: 'Force build without version check'
+        required: false
+        default: false
+        type: boolean
+      build_target:
+        description: 'Build target (latest, beta, or both)'
+        required: false
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - latest
+          - beta
 
 jobs:
   latest:
     runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.build_target == 'latest' || github.event.inputs.build_target == 'both' || github.event.inputs.build_target == '' }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Check Version
         id: check
         run: |
-          NEW_VERSION=$(curl -s https://s3.amazonaws.com/dstbuilds/builds.json | jq '.release[-1] | tonumber')
-          OLD_VERSION=$(cat version.txt)
-          if [ "$NEW_VERSION" -gt "$OLD_VERSION" ]; then
-            echo "Need Update $OLD_VERSION -> $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
+          FORCE_BUILD="${{ github.event.inputs.force_build }}"
+          if [ "$FORCE_BUILD" = "true" ]; then
+            echo "Force build enabled, skipping version check" >> $GITHUB_STEP_SUMMARY
             echo "need_update=true" >> $GITHUB_OUTPUT
-            echo -n $NEW_VERSION > version.txt
+            echo "force_build=true" >> $GITHUB_OUTPUT
           else
-            echo "Skip Update $OLD_VERSION : $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
-            echo "need_update=false" >> $GITHUB_OUTPUT
+            NEW_VERSION=$(curl -s https://s3.amazonaws.com/dstbuilds/builds.json | jq '.release[-1] | tonumber')
+            OLD_VERSION=$(cat version.txt)
+            if [ "$NEW_VERSION" -gt "$OLD_VERSION" ]; then
+              echo "Need Update $OLD_VERSION -> $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
+              echo "need_update=true" >> $GITHUB_OUTPUT
+              echo "force_build=false" >> $GITHUB_OUTPUT
+              echo -n $NEW_VERSION > version.txt
+            else
+              echo "Skip Update $OLD_VERSION : $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
+              echo "need_update=false" >> $GITHUB_OUTPUT
+              echo "force_build=false" >> $GITHUB_OUTPUT
+            fi
           fi
 
       - name: Build Image
@@ -49,7 +74,7 @@ jobs:
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
       - name: Update version.txt
-        if: ${{ steps.check.outputs.need_update == 'true' }}
+        if: ${{ steps.check.outputs.need_update == 'true' && steps.check.outputs.force_build == 'false' }}
         uses: EndBug/add-and-commit@v9
         with:
           add: version.txt
@@ -57,21 +82,31 @@ jobs:
 
   beta:
     runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.build_target == 'beta' || github.event.inputs.build_target == 'both' || github.event.inputs.build_target == '' }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Check Version
         id: check
         run: |
-          NEW_VERSION=$(curl -s https://s3.amazonaws.com/dstbuilds/builds.json | jq '.updatebeta[-1] | tonumber')
-          OLD_VERSION=$(cat beta-version.txt)
-          if [ "$NEW_VERSION" -gt "$OLD_VERSION" ]; then
-            echo "Need Update $OLD_VERSION -> $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
+          FORCE_BUILD="${{ github.event.inputs.force_build }}"
+          if [ "$FORCE_BUILD" = "true" ]; then
+            echo "Force build enabled, skipping version check" >> $GITHUB_STEP_SUMMARY
             echo "need_update=true" >> $GITHUB_OUTPUT
-            echo -n $NEW_VERSION > beta-version.txt
+            echo "force_build=true" >> $GITHUB_OUTPUT
           else
-            echo "Skip Update $OLD_VERSION : $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
-            echo "need_update=false" >> $GITHUB_OUTPUT
+            NEW_VERSION=$(curl -s https://s3.amazonaws.com/dstbuilds/builds.json | jq '.updatebeta[-1] | tonumber')
+            OLD_VERSION=$(cat beta-version.txt)
+            if [ "$NEW_VERSION" -gt "$OLD_VERSION" ]; then
+              echo "Need Update $OLD_VERSION -> $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
+              echo "need_update=true" >> $GITHUB_OUTPUT
+              echo "force_build=false" >> $GITHUB_OUTPUT
+              echo -n $NEW_VERSION > beta-version.txt
+            else
+              echo "Skip Update $OLD_VERSION : $NEW_VERSION" >> $GITHUB_STEP_SUMMARY
+              echo "need_update=false" >> $GITHUB_OUTPUT
+              echo "force_build=false" >> $GITHUB_OUTPUT
+            fi
           fi
 
       - name: Build Image
@@ -98,7 +133,7 @@ jobs:
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
       - name: Update version.txt
-        if: ${{ steps.check.outputs.need_update == 'true' }}
+        if: ${{ steps.check.outputs.need_update == 'true' && steps.check.outputs.force_build == 'false' }}
         uses: EndBug/add-and-commit@v9
         with:
           add: beta-version.txt

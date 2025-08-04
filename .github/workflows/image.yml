@@ -82,7 +82,7 @@ jobs:
 
   beta:
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.build_target == 'beta' || github.event.inputs.build_target == 'both' || github.event.inputs.build_target == '' }}
+    if: false
     steps:
       - uses: actions/checkout@v4
 

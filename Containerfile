@@ -1,7 +1,7 @@
 FROM docker.io/cm2network/steamcmd:root
 LABEL maintainer="wh2099@outlook.com"
 
-ARG BETA
+ARG BETA=""
 ARG DST_64_PKGS="libcurl3-gnutls procps"
 
 WORKDIR /
